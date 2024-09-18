@@ -40,5 +40,5 @@ CREATE TABLE instructor_media (
 
 CREATE TABLE class (
   class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
 );
