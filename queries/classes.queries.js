@@ -1,10 +1,20 @@
 const db = require('../db/dbConfig.js');
+const {userInfo} = require('./users.queries.js');
 
 const getAllClasses = async (page = 1, limit = 20) => {
   try {
     const offset = (page - 1) * limit;
     const classes = await db.any(`
-      SELECT * FROM classes
+      SELECT 
+        classes.*,
+        json_build_object(
+          'instructor_id', users.user_id,
+          'first_name', users.first_name,
+          'middle_name', users.middle_name,
+          'last_name', users.last_name 
+        ) AS instructor
+      FROM classes
+      LEFT JOIN users ON classes.instructor_id = users.user_id
       WHERE class_date >= NOW()
       ORDER BY class_date ASC
       LIMIT $1 OFFSET $2`
@@ -30,7 +40,7 @@ const getClassById = async (id) => {
           'middle_name', users.middle_name,
           'last_name', users.last_name,
           'email', users.email,
-          'profile_picture', users.profile_picture
+          'profile_picture', users.profile_picture,
           'bio', users.bio
         ) AS instructor
       FROM classes
@@ -46,7 +56,55 @@ const getClassById = async (id) => {
   }
 };
 
+const getClassStudents = async (id) => {
+  try {
+    const studentsIds = await db.any(`
+      SELECT
+        class.user_id
+      FROM class
+      WHERE class_id = $1`
+      , id);
+    const students = await Promise.all(studentsIds.map(studentId => userInfo(studentId.user_id)));
+    return !students.length ? [] : students;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getUserClasses = async (id) => {
+  try {
+    const classesIds = await db.any(`
+      SELECT
+        class_id
+      FROM class
+      WHERE user_id = $1`
+      , id);
+    const classes = await Promise.all(classesIds.map(classId => getClassById(classId.class_id)));
+    return !classes.length ? [] : classes;
+  } catch (error) {
+    throw error;
+  }
+}
+
+const getInstructorClasses = async (id) => {
+  try {
+    const classesIds = await db.any(`
+      SELECT
+        class_id
+      FROM classes
+      WHERE classes.instructor_id = $1`
+      , id);
+    const classes = await Promise.all(classesIds.map(classId => getClassById(classId.class_id)));
+    return !classes.length ? [] : classes;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   getAllClasses,
-  getClassById
+  getClassById,
+  getClassStudents,
+  getUserClasses,
+  getInstructorClasses
 };

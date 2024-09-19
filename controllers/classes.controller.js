@@ -1,7 +1,7 @@
 const express = require('express');
 const classes = express.Router();
 const {camelizeKeys} = require('humps');
-const {getAllClasses, getClassById} = require('../queries/classes.queries.js');
+const {getAllClasses, getClassById, getClassStudents, getUserClasses, getInstructorClasses} = require('../queries/classes.queries.js');
 const {authenticateUser} = require('../auth/users.auth.js');
 
 classes.get('/', async (req, res) => {
@@ -45,6 +45,13 @@ classes.get('/userClasses/:userId', authenticateUser, async (req, res) => {
 });
 
 classes.get('/instructorClasses/:instructorId', authenticateUser, async (req, res) => {
+  try {
+    const {instructorId} = req.params;
+    const classes = await getInstructorClasses(instructorId);
+    res.status(200).json({classes: camelizeKeys(classes)});
+  } catch (error) {
+    res.status(404).json({error: error.message});
+  }
 });
 
 

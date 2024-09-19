@@ -4,16 +4,10 @@ const bcrypt = require('bcrypt');
 const userLogin = async (email, password) => {
   try {
     const user = await db.oneOrNone('SELECT * FROM users WHERE email = $1', email);
-    if(!user) {
-      throw new Error('Invalid Credentials');
-    } else {
-      const passwordMatched = await bcrypt.compare(password, user.password);
-      if(passwordMatched) {
-        return user;
-      } else {
-        throw new Error('Invalid Credentials');
-      }
-    }
+    if(!user) throw new Error('Invalid Credentials');
+    const passwordMatched = await bcrypt.compare(password, user.password);
+    if(!passwordMatched) throw new Error('Invalid Credentials');
+    return user;
   } catch (error) {
     throw error;
   }
@@ -29,8 +23,7 @@ const userInfo = async (id) => {
           FILTER (WHERE instructor_media.media_key IS NOT NULL), '[]'
         ) AS user_media
       FROM users
-      LEFT JOIN instructor_media 
-        ON users.user_id = instructor_media.instructor_id
+      LEFT JOIN instructor_media ON users.user_id = instructor_media.instructor_id
       WHERE users.user_id = $1
       GROUP BY users.user_id
     `, id);
