@@ -16,7 +16,7 @@ INSERT INTO users ( first_name, last_name, email, password, is_instructor, profi
 
 INSERT INTO classes (instructor_id, title, highlight_picture, description, class_date, class_time, price, capacity) 
 VALUES 
-(1, 'Introduction to Web Development', 'https://media.istockphoto.com/id/1356364268/photo/close-up-focus-on-persons-hands-typing-on-the-desktop-computer-keyboard-screens-show-coding.jpg?s=2048x2048&w=is&k=20&c=RKQ2PtlwnwfgZRRiEJUIszBxVjAyCFLxteBxbR6Cli0=', 'A beginner-friendly course covering HTML, CSS, and JavaScript basics. Perfect for those starting their journey in web development.', '2024-09-25', '10:00:00', 150.00, 15),
+(2, 'Introduction to Web Development', 'https://media.istockphoto.com/id/1356364268/photo/close-up-focus-on-persons-hands-typing-on-the-desktop-computer-keyboard-screens-show-coding.jpg?s=2048x2048&w=is&k=20&c=RKQ2PtlwnwfgZRRiEJUIszBxVjAyCFLxteBxbR6Cli0=', 'A beginner-friendly course covering HTML, CSS, and JavaScript basics. Perfect for those starting their journey in web development.', '2024-09-25', '10:00:00', 150.00, 15),
 
 (2, 'Baking the Perfect Cake', 'https://media.istockphoto.com/id/1483936952/photo/cheesecake.jpg?s=2048x2048&w=is&k=20&c=hUn3itN4Ac52VMTStHZ6u8F8vATSqNxmpr-t1BLBvVQ=', 'Learn how to bake delicious cakes from scratch. This hands-on class will cover cake-making techniques, including frosting and decorating.', '2024-09-28', '14:00:00', 75.00, 12),
 
@@ -24,11 +24,10 @@ VALUES
 
 (4, 'Beginner Yoga', 'https://media.istockphoto.com/id/1483989758/photo/diverse-yoga-class-participants-doing-a-side-plank-on-their-yoga-mats-in-a-beautiful-yoga.jpg?s=2048x2048&w=is&k=20&c=Mz6-kl6eHcbtigh3-YSdOWjynMBaDXejbfvKUkt8KzM=', 'A relaxing yoga class designed for beginners to help improve flexibility and reduce stress. No prior experience required.', '2024-09-29', '09:00:00', 20.00, 7),
 
-(5, 'Photography 101: Capturing the Moment', 'https://media.istockphoto.com/id/639695818/photo/photographer-workplace.jpg?s=2048x2048&w=is&k=20&c=nsNh31L6-lF5_gOwn1ZaFchibief5YCd5LhZbNJo4l8=', 'This course covers the basics of photography, including lighting, composition, and camera settings to help you capture beautiful photos.', '2024-10-05', '16:00:00', 120.00, 10);
+(4, 'Photography 101: Capturing the Moment', 'https://media.istockphoto.com/id/639695818/photo/photographer-workplace.jpg?s=2048x2048&w=is&k=20&c=nsNh31L6-lF5_gOwn1ZaFchibief5YCd5LhZbNJo4l8=', 'This course covers the basics of photography, including lighting, composition, and camera settings to help you capture beautiful photos.', '2024-10-05', '16:00:00', 120.00, 10);
 
 
 
-INSERT INTO class (user_id, class_id) values 
 INSERT INTO class (user_id, class_id) 
 VALUES 
 (1, 1), -- User 1 enrolled in Web Development
@@ -49,6 +48,10 @@ VALUES
 
 
 
-
-
--- https://xsgames.co/randomusers/avatar.php?g=female&minimum_age=18&maximum_age=100
+INSERT INTO instructor_media (instructor_id, media_key)
+VALUES
+(2, 'https://media.istockphoto.com/id/1356364268/photo/close-up-focus-on-persons-hands-typing-on-the-desktop-computer-keyboard-screens-show-coding.jpg?s=2048x2048&w=is&k=20&c=RKQ2PtlwnwfgZRRiEJUIszBxVjAyCFLxteBxbR6Cli0='),
+(2, 'https://media.istockphoto.com/id/1483936952/photo/cheesecake.jpg?s=2048x2048&w=is&k=20&c=hUn3itN4Ac52VMTStHZ6u8F8vATSqNxmpr-t1BLBvVQ='),
+(3, 'https://media.istockphoto.com/id/487145924/photo/dictionary-series-history.jpg?s=2048x2048&w=is&k=20&c=xuyrH515RbSYMHABBt-PlO0aQkIio3HCFz5lIY_eBKU='),
+(4, 'https://media.istockphoto.com/id/1483989758/photo/diverse-yoga-class-participants-doing-a-side-plank-on-their-yoga-mats-in-a-beautiful-yoga.jpg?s=2048x2048&w=is&k=20&c=Mz6-kl6eHcbtigh3-YSdOWjynMBaDXejbfvKUkt8KzM='),
+(4, 'https://media.istockphoto.com/id/639695818/photo/photographer-workplace.jpg?s=2048x2048&w=is&k=20&c=nsNh31L6-lF5_gOwn1ZaFchibief5YCd5LhZbNJo4l8=');
