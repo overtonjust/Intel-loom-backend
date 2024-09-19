@@ -1,11 +1,10 @@
 const express = require('express');
+const users = express.Router();
 const {camelizeKeys} = require('humps');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const secret = process.env.SECRET;
-const users = express.Router();
 const {userLogin} = require('../queries/users.queries.js');
-const {authenticateUser} = require('../auth/users.auth.js');
 
 users.post('/login', async (req, res) => {
   try {
