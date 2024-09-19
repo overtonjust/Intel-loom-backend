@@ -19,6 +19,29 @@ const userLogin = async (email, password) => {
   }
 }
 
+const userInfo = async (id) => {
+  try {
+    const user = await db.oneOrNone(`
+      SELECT 
+        users.*,
+        COALESCE(
+          json_agg(instructor_media.media_key) 
+          FILTER (WHERE instructor_media.media_key IS NOT NULL), '[]'
+        ) AS user_media
+      FROM users
+      LEFT JOIN instructor_media 
+        ON users.user_id = instructor_media.instructor_id
+      WHERE users.user_id = $1
+      GROUP BY users.user_id
+    `, id);
+    if(!user) throw new Error('User not found');
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
-  userLogin
+  userLogin,
+  userInfo
 };

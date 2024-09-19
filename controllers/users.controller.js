@@ -4,7 +4,21 @@ const {camelizeKeys} = require('humps');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const secret = process.env.SECRET;
-const {userLogin} = require('../queries/users.queries.js');
+const {userLogin, userInfo} = require('../queries/users.queries.js');
+const {authenticateUser} = require('../auth/users.auth.js');
+
+users.get('/', (req, res) => res.status(403).send('Unauthorized'));
+
+users.get('/:id', authenticateUser, async (req, res) => {
+  try {
+    const {id} = req.params;
+    const user = await userInfo(id);
+    delete user.password;
+    res.status(200).json({info: camelizeKeys(user)});
+  } catch (error) {
+    res.status(404).json({error: error.message});
+  }
+});
 
 users.post('/login', async (req, res) => {
   try {
