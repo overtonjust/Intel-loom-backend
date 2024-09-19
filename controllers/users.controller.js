@@ -1,34 +1,36 @@
-const express = require('express');
+const express = require("express");
 const users = express.Router();
-const {camelizeKeys} = require('humps');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const { camelizeKeys } = require("humps");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 const secret = process.env.SECRET;
-const {userLogin, userInfo} = require('../queries/users.queries.js');
-const {authenticateUser} = require('../auth/users.auth.js');
+const { userLogin, userInfo } = require("../queries/users.queries.js");
+const { authenticateUser } = require("../auth/users.auth.js");
 
-users.get('/', (req, res) => res.status(403).send('Unauthorized'));
+users.get("/", (req, res) => res.status(403).send("Unauthorized"));
 
-users.get('/:id', authenticateUser, async (req, res) => {
+users.get("/:id", authenticateUser, async (req, res) => {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
     const user = await userInfo(id);
     delete user.password;
-    res.status(200).json({info: camelizeKeys(user)});
+    res.status(200).json({ info: camelizeKeys(user) });
   } catch (error) {
-    res.status(404).json({error: error.message});
+    res.status(404).json({ error: error.message });
   }
 });
 
-users.post('/login', async (req, res) => {
+users.post("/login", async (req, res) => {
   try {
-    const {email, password} = req.body;
+    const { email, password } = req.body;
     const user = await userLogin(email, password);
     delete user.password;
-    const token = jwt.sign({id: user.id, email: user.email}, secret, {expiresIn: '1h'});
-    res.status(200).json({info: camelizeKeys(user), token});
+    const token = jwt.sign({ id: user.id, email: user.email }, secret, {
+      expiresIn: "1h",
+    });
+    res.status(200).json({ info: camelizeKeys(user), token });
   } catch (error) {
-    res.status(401).json({error: error.message});
+    res.status(401).json({ error: error.message });
   }
 });
 

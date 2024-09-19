@@ -1,21 +1,25 @@
-const db = require('../db/dbConfig.js');
-const bcrypt = require('bcrypt');
+const db = require("../db/dbConfig.js");
+const bcrypt = require("bcrypt");
 
 const userLogin = async (email, password) => {
   try {
-    const user = await db.oneOrNone('SELECT * FROM users WHERE email = $1', email);
-    if(!user) throw new Error('Invalid Credentials');
+    const user = await db.oneOrNone(
+      "SELECT * FROM users WHERE email = $1",
+      email
+    );
+    if (!user) throw new Error("Invalid Credentials");
     const passwordMatched = await bcrypt.compare(password, user.password);
-    if(!passwordMatched) throw new Error('Invalid Credentials');
+    if (!passwordMatched) throw new Error("Invalid Credentials");
     return user;
   } catch (error) {
     throw error;
   }
-}
+};
 
 const userInfo = async (id) => {
   try {
-    const user = await db.oneOrNone(`
+    const user = await db.oneOrNone(
+      `
       SELECT 
         users.*,
         COALESCE(
@@ -26,8 +30,10 @@ const userInfo = async (id) => {
       LEFT JOIN instructor_media ON users.user_id = instructor_media.instructor_id
       WHERE users.user_id = $1
       GROUP BY users.user_id
-    `, id);
-    if(!user) throw new Error('User not found');
+    `,
+      id
+    );
+    if (!user) throw new Error("User not found");
     return user;
   } catch (error) {
     throw error;
@@ -36,5 +42,5 @@ const userInfo = async (id) => {
 
 module.exports = {
   userLogin,
-  userInfo
+  userInfo,
 };

@@ -1,17 +1,17 @@
-const pgp = require('pg-promise')();
-require('dotenv').config();
+const pgp = require("pg-promise")();
+require("dotenv").config();
 
 const cn = {
   host: process.env.PG_HOST,
   port: process.env.PG_PORT,
   database: process.env.PG_DATABASE,
   user: process.env.PG_USER,
-  password: process.env.PG_PASSWORD
+  password: process.env.PG_PASSWORD,
 };
 
 const db = pgp(cn);
 
-db.connect()
+/* db.connect()
   .then(cn => {
     const {user, host, port, database} = cn.client;
     console.log(
@@ -21,8 +21,6 @@ db.connect()
     );
     cn.done();
   })
-  .catch(error => console.log('database connection error', error));
+  .catch(error => console.log('database connection error', error)); */
 
 module.exports = db;
-
-

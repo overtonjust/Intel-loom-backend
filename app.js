@@ -12,6 +12,6 @@ app.use('/classes', classesController);
 
 app.get('/', (req, res) => res.status(200).send('Welcome to Intel Loom\'s Backend!'));
 
-app.get('*', (req, res) => res.status(404).send('Page not found'));
+app.all('*', (req, res) => res.status(404).send('Page not found'));
 
 module.exports = app;

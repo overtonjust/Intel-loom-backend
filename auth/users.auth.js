@@ -5,11 +5,11 @@ const secret = process.env.SECRET;
 const authenticateUser = (req, res, next) => {
   const token = req.header("Authorization");
   if (!token) {
-    return res.status(401).json({ message: "No token provided" });
+    res.status(401).json({ error: "No token provided" });
   }
   jwt.verify(token, secret, (error, user) => {
     if (error) {
-      return res.status(403).json({ message: "Unauthorized" });
+      res.status(403).json({ error: "Unauthorized" });
     }
     req.user = user;
     next();
