@@ -1,3 +1,5 @@
+\c intel_loom;
+
 INSERT INTO users 
 (first_name, last_name, email, 
   password, is_instructor, 
@@ -611,11 +613,11 @@ VALUES
 (2, 'https://media.istockphoto.com/id/1483936952/photo/cheesecake.jpg?s=2048x2048&w=is&k=20&c=hUn3itN4Ac52VMTStHZ6u8F8vATSqNxmpr-t1BLBvVQ='),
 (2, 'https://placehold.co/300x400'),
 (2, 'https://placehold.co/300x400'),
-(3, 'https://placehold.co/300x400'),
+(3, 'https://media.istockphoto.com/id/487145924/photo/dictionary-series-history.jpg?s=2048x2048&w=is&k=20&c=xuyrH515RbSYMHABBt-PlO0aQkIio3HCFz5lIY_eBKU='),
 (3, 'https://placehold.co/300x400'),
 (3, 'https://placehold.co/300x400'),
 (3, 'https://placehold.co/300x400'),
 (4, 'https://placehold.co/300x400'),
-(4, 'https://media.istockphoto.com/id/487145924/photo/dictionary-series-history.jpg?s=2048x2048&w=is&k=20&c=xuyrH515RbSYMHABBt-PlO0aQkIio3HCFz5lIY_eBKU='),
+(4, 'https://placehold.co/300x400'),
 (4, 'https://media.istockphoto.com/id/1483989758/photo/diverse-yoga-class-participants-doing-a-side-plank-on-their-yoga-mats-in-a-beautiful-yoga.jpg?s=2048x2048&w=is&k=20&c=Mz6-kl6eHcbtigh3-YSdOWjynMBaDXejbfvKUkt8KzM='),
 (4, 'https://media.istockphoto.com/id/639695818/photo/photographer-workplace.jpg?s=2048x2048&w=is&k=20&c=nsNh31L6-lF5_gOwn1ZaFchibief5YCd5LhZbNJo4l8=');
