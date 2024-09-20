@@ -23,7 +23,8 @@ CREATE TABLE classes (
   description TEXT NOT NULL,
   highlight_picture TEXT,
   class_date DATE NOT NULL,
-  class_time TIME NOT NULL,
+  class_time_start TIME NOT NULL,
+  class_time_end TIME NOT NULL,
   price DECIMAL(5, 2) NOT NULL,
   capacity INTEGER NOT NULL
 );
