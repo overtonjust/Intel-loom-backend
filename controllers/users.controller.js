@@ -9,17 +9,6 @@ const { authenticateUser } = require("../auth/users.auth.js");
 
 users.get("/", (req, res) => res.status(403).send("Unauthorized"));
 
-users.get("/:id", authenticateUser, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await userInfo(id);
-    delete user.password;
-    res.status(200).json({ info: camelizeKeys(user) });
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
 users.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -31,6 +20,17 @@ users.post("/login", async (req, res) => {
     res.status(200).json({ info: camelizeKeys(user), token });
   } catch (error) {
     res.status(401).json({ error: error.message });
+  }
+});
+
+users.get("/:id", authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await userInfo(id);
+    delete user.password;
+    res.status(200).json({ info: camelizeKeys(user) });
+  } catch (error) {
+    res.status(404).json({ error: error.message });
   }
 });
 

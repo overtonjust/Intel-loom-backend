@@ -34,8 +34,8 @@ const getClassById = async (id) => {
       SELECT 
         classes.*,
         COALESCE(
-          json_agg(classes_pictures.picture_key)
-          FILTER (WHERE classes_pictures.picture_key IS NOT NULL), '[]'
+          json_agg(class_pictures.picture_key)
+          FILTER (WHERE class_pictures.picture_key IS NOT NULL), '[]'
         ) AS class_pictures,
         json_build_object(
           'instructor_id', users.user_id,
@@ -48,7 +48,7 @@ const getClassById = async (id) => {
         ) AS instructor
       FROM classes
       LEFT JOIN users ON classes.instructor_id = users.user_id
-      LEFT JOIN classes_pictures ON classes.class_id = classes_pictures.class_id
+      LEFT JOIN class_pictures ON classes.class_id = class_pictures.class_id
       WHERE classes.class_id = $1
       GROUP BY classes.class_id, users.user_id`,
       id
