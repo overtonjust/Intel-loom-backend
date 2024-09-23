@@ -4,12 +4,13 @@ const bcrypt = require("bcrypt");
 const userLogin = async (email, password) => {
   try {
     const user = await db.oneOrNone(
-      "SELECT * FROM users WHERE email = $1",
+      "SELECT users.user_id, users.password FROM users WHERE email = $1",
       email
     );
     if (!user) throw new Error("Invalid Credentials");
     const passwordMatched = await bcrypt.compare(password, user.password);
     if (!passwordMatched) throw new Error("Invalid Credentials");
+    delete user.password;
     return user;
   } catch (error) {
     throw error;

@@ -14,7 +14,7 @@ classes.get("/", async (req, res) => {
   try {
     const { page, limit } = req.query;
     const classes = await getAllClasses(page, limit);
-    res.status(200).json({ classes: camelizeKeys(classes) });
+    res.status(200).json(camelizeKeys(classes));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
@@ -24,7 +24,7 @@ classes.get("/classInfo/:classId", async (req, res) => {
   try {
     const { classId } = req.params;
     const classById = await getClassById(classId);
-    res.status(200).json({ class: camelizeKeys(classById) });
+    res.status(200).json(camelizeKeys(classById));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
@@ -34,7 +34,7 @@ classes.get("/classStudents/:classId", authenticateUser, async (req, res) => {
   try {
     const { classId } = req.params;
     const students = await getClassStudents(classId);
-    res.status(200).json({ students: camelizeKeys(students) });
+    res.status(200).json(camelizeKeys(students));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
@@ -44,7 +44,7 @@ classes.get("/userClasses/:userId", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.params;
     const classes = await getUserClasses(userId);
-    res.status(200).json({ classes: camelizeKeys(classes) });
+    res.status(200).json(camelizeKeys(classes));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
@@ -57,7 +57,7 @@ classes.get(
     try {
       const { instructorId } = req.params;
       const classes = await getInstructorClasses(instructorId);
-      res.status(200).json({ classes: camelizeKeys(classes) });
+      res.status(200).json(camelizeKeys(classes));
     } catch (error) {
       res.status(404).json({ error: error.message });
     }

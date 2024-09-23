@@ -13,11 +13,10 @@ users.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await userLogin(email, password);
-    delete user.password;
-    const token = jwt.sign({ id: user.id, email: user.email }, secret, {
+    const token = jwt.sign({ id: user.user_id, email: user.email }, secret, {
       expiresIn: "1h",
     });
-    res.status(200).json({ info: camelizeKeys(user), token });
+    res.status(200).json({ ...camelizeKeys(user), token });
   } catch (error) {
     res.status(401).json({ error: error.message });
   }
