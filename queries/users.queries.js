@@ -4,7 +4,19 @@ const bcrypt = require("bcrypt");
 const userLogin = async (email, password) => {
   try {
     const user = await db.oneOrNone(
-      "SELECT users.user_id, users.password FROM users WHERE email = $1",
+      `
+      SELECT 
+        users.user_id,
+        users.password,
+      COALESCE(
+        json_agg(class.class_id)
+        FILTER (WHERE class.class_id IS NOT NULL), '[]'
+      ) AS enrolled_classes_ids
+      FROM users 
+      LEFT JOIN class ON users.user_id = class.user_id
+      WHERE email = $1
+      GROUP BY users.user_id
+      `,
       email
     );
     if (!user) throw new Error("Invalid Credentials");

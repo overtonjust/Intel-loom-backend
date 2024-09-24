@@ -13,8 +13,8 @@ const { authenticateUser } = require("../auth/users.auth.js");
 classes.get("/", async (req, res) => {
   try {
     const { page, limit } = req.query;
-    const classes = await getAllClasses(page, limit);
-    res.status(200).json(camelizeKeys(classes));
+    const set = await getAllClasses(page, limit);
+    res.status(200).json(camelizeKeys(set));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
