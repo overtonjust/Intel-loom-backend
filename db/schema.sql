@@ -26,7 +26,8 @@ CREATE TABLE classes (
   class_time_start TIME NOT NULL,
   class_time_end TIME NOT NULL,
   price DECIMAL(5, 2) NOT NULL,
-  capacity INTEGER NOT NULL
+  capacity INTEGER NOT NULL,
+  room_id TEXT NOT NULL
 );
 
 CREATE TABLE class_pictures (
