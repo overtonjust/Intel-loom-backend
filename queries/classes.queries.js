@@ -7,8 +7,15 @@ const getAllClasses = async (page = 1, limit = 20) => {
     const classes = await db.any(
       `
       SELECT 
-        *
+        classes.*,
+        json_build_object(
+          'instructor_id', users.user_id,
+          'first_name', users.first_name,
+          'middle_name', users.middle_name,
+          'last_name', users.last_name 
+        ) AS instructor
       FROM classes
+      LEFT JOIN users ON classes.instructor_id = users.user_id
       WHERE class_date >= NOW()
       ORDER BY class_date ASC
       LIMIT $1 OFFSET $2`,
