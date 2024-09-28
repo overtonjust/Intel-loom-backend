@@ -14,7 +14,8 @@ app.use(express.json());
 app.use(session({
   store : new PgSession({
     pgPromise : db,
-    tableName : 'session'
+    tableName : 'session',
+    createTableIfMissing : true
   }),
   secret : process.env.SECRET,
   resave : false,
