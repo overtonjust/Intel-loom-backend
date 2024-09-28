@@ -6,8 +6,15 @@ require("dotenv").config();
 const secret = process.env.SECRET;
 const { userLogin, userInfo } = require("../queries/users.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
+const { validatePassword } = require('../validations/users.validations.js');
 
 users.get("/", (req, res) => res.status(403).send("Unauthorized"));
+
+users.post('/validate-password', (req, res) => {
+  const { password } = req.body;
+  const passwordValidation = validatePassword(password);
+  res.status(200).json(camelizeKeys(passwordValidation));
+});
 
 users.post("/login", async (req, res) => {
   try {
