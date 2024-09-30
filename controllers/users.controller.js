@@ -3,11 +3,11 @@ const users = express.Router();
 const { camelizeKeys } = require("humps");
 const { userLogin, userInfo } = require("../queries/users.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
-const { validatePassword } = require('../validations/users.validations.js');
+const { validatePassword } = require("../validations/users.validations.js");
 
 users.get("/", (req, res) => res.status(403).send("Unauthorized"));
 
-users.post('/validate-password', (req, res) => {
+users.post("/validate-password", (req, res) => {
   const { password } = req.body;
   const passwordValidation = validatePassword(password);
   res.status(200).json(camelizeKeys(passwordValidation));
@@ -27,15 +27,23 @@ users.post("/login", async (req, res) => {
 
 users.post("/logout", (req, res) => {
   try {
-    req.session.destroy(err => {
+    req.session.destroy((err) => {
       if (err) {
-        throw new Error('Problem logging out.');
+        throw new Error("Problem logging out.");
       }
-      res.clearCookie('sid');
-      res.status(200).send('Logged out successfully.');
-    })
+      res.clearCookie("sid");
+      res.status(200).send("Logged out successfully.");
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+users.get("/check-session", (req, res) => {
+  if (req.session.loggedIn) {
+    res.status(200).json("Session is active.");
+  } else {
+    res.status(401).json("Session is inactive.");
   }
 });
 
