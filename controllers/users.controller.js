@@ -25,6 +25,20 @@ users.post("/login", async (req, res) => {
   }
 });
 
+users.post("/logout", (req, res) => {
+  try {
+    req.session.destroy(err => {
+      if (err) {
+        throw new Error('Problem logging out.');
+      }
+      res.clearCookie('sid');
+      res.status(200).send('Logged out successfully.');
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 users.get("/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
