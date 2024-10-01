@@ -3,7 +3,7 @@ const users = express.Router();
 const { camelizeKeys } = require("humps");
 const { userLogin, userInfo } = require("../queries/users.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
-const { validatePassword } = require("../validations/users.validations.js");
+const { validatePassword, itsNewUsername, itsNewEmail } = require("../validations/users.validations.js");
 
 users.get("/", (req, res) => res.status(403).send("Unauthorized"));
 
@@ -11,6 +11,26 @@ users.post("/validate-password", (req, res) => {
   const { password } = req.body;
   const passwordValidation = validatePassword(password);
   res.status(200).json(camelizeKeys(passwordValidation));
+});
+
+users.post("/validate-username", async (req, res) => {
+  const { username } = req.body;
+  const isNewUsername = await itsNewUsername(username);
+  if (isNewUsername) {
+    res.status(200).json("Username is available.");
+  } else {
+    res.status(400).json("Username is taken.");
+  }
+});
+
+users.post("/validate-email", async (req, res) => {
+  const { email } = req.body;
+  const isNewEmail = await itsNewEmail(email);
+  if (isNewEmail) {
+    res.status(200).json("Email is available.");
+  } else {
+    res.status(400).json("Email is taken.");
+  }
 });
 
 users.post("/login", async (req, res) => {
