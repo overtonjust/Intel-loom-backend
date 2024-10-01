@@ -1,5 +1,3 @@
-const db = require('../db/dbConfig.js');
-
 const validatePassword = password => {
   return {
     length: password.length >= 12,
@@ -10,14 +8,4 @@ const validatePassword = password => {
   }
 };
 
-const itsNewUsername = async username => {
-  const check = await db.oneOrNone('SELECT username FROM users WHERE username = $1', username);
-  return check === null;
-}
-
-const itsNewEmail = async email => {
-  const check = await db.oneOrNone('SELECT email FROM users WHERE email = $1', email);
-  return check === null;
-}
-
-module.exports = { validatePassword, itsNewUsername, itsNewEmail };
+module.exports = { validatePassword };

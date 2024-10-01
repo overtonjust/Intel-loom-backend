@@ -1,9 +1,9 @@
 const express = require("express");
 const users = express.Router();
 const { camelizeKeys } = require("humps");
-const { userLogin, userInfo } = require("../queries/users.queries.js");
+const { itsNewUsername, itsNewEmail, userLogin, userInfo } = require("../queries/users.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
-const { validatePassword, itsNewUsername, itsNewEmail } = require("../validations/users.validations.js");
+const { validatePassword } = require("../validations/users.validations.js");
 
 users.get("/", (req, res) => res.status(403).send("Unauthorized"));
 
