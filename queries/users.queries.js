@@ -1,6 +1,16 @@
 const db = require("../db/dbConfig.js");
 const bcrypt = require("bcrypt");
 
+const itsNewUsername = async username => {
+  const check = await db.oneOrNone('SELECT username FROM users WHERE username = $1', username);
+  return check === null;
+};
+
+const itsNewEmail = async email => {
+  const check = await db.oneOrNone('SELECT email FROM users WHERE email = $1', email);
+  return check === null;
+};
+
 const userLogin = async (email, password) => {
   try {
     const user = await db.oneOrNone(
@@ -54,6 +64,8 @@ const userInfo = async (id) => {
 };
 
 module.exports = {
+  itsNewUsername,
+  itsNewEmail,
   userLogin,
   userInfo,
 };
