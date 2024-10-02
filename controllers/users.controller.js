@@ -29,7 +29,7 @@ users.post("/validate-email", async (req, res) => {
   if (isNewEmail) {
     res.status(200).json("Email is available.");
   } else {
-    res.status(400).json("Email is taken.");
+    res.status(400).json("Account with that email already exists, please log in?");
   }
 });
 
