@@ -7,7 +7,8 @@ const {
   getUserClasses,
   getInstructorClasses,
   itsNewUsername,
-  itsNewEmail
+  itsNewEmail,
+  getUserBookmarks,
 } = require("../queries/users.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 const { validatePassword } = require("../validations/users.validations.js");
@@ -79,6 +80,16 @@ users.get("/userClasses/:userId", authenticateUser, async (req, res) => {
     const { userId } = req.params;
     const classes = await getUserClasses(userId);
     res.status(200).json(camelizeKeys(classes));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+users.get("/userBookmarks/:userId", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const bookmarks = await getUserBookmarks(userId);
+    res.status(200).json(camelizeKeys(bookmarks));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }

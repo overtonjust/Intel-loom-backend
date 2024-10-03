@@ -30,7 +30,7 @@ const userLogin = async (email, password) => {
 };
 
 const userInfo = async (id) => {
-  try {
+try {
     const user = await db.oneOrNone(
       "SELECT * FROM users WHERE user_id = $1",
       id
@@ -172,6 +172,47 @@ const getInstructorClasses = async (id) => {
   }
 };
 
+const getUserBookmarks = async (id) => {
+  try {
+    const bookmarks_info_bulk = await db.any(
+      `
+      SELECT classes.*, users.first_name, users.middle_name, users.last_name
+      FROM bookmarked_classes
+      JOIN classes ON bookmarked_classes.class_id = classes.class_id
+      JOIN users ON classes.instructor_id = users.user_id
+      WHERE bookmarked_classes.user_id = $1
+      `, id
+    );
+    if (!bookmarks_info_bulk.length) return [];
+    const bookmark_map = new Map();
+    await Promise.all(
+      bookmarks_info_bulk.map(async (classInfo) => {
+        if (!bookmark_map.has(classInfo.class_id)) {
+          const signed_url = await getSignedUrlFromS3(classInfo.highlight_picture);
+          bookmark_map.set(classInfo.class_id, {
+            instructor: {
+              instructor_id: classInfo.instructor_id,
+              first_name: classInfo.first_name,
+              middle_name: classInfo.middle_name,
+              last_name: classInfo.last_name,
+            },
+            class_id: classInfo.class_id,
+            title: classInfo.title,
+            highlight_picture: signed_url,
+            price: classInfo.price,
+          });
+        }
+      })
+    );
+    const formatted_bookmark_info = bookmarks_info_bulk.map((classInfo) => ({
+      ...bookmark_map.get(classInfo.class_id),
+    }));
+    return formatted_bookmark_info;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   itsNewUsername,
   itsNewEmail,
@@ -179,4 +220,5 @@ module.exports = {
   userInfo,
   getUserClasses,
   getInstructorClasses,
+  getUserBookmarks,
 };
