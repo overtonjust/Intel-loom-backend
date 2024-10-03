@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
+const pathToFfmpeg = require('ffmpeg-static');
+ffmpeg.setFfmpegPath(pathToFfmpeg);
 const { s3 } = require('../db/s3Config.js');
 const {
   DeleteObjectCommand,
@@ -60,10 +62,9 @@ const addToS3 = async (media) => {
       await s3.send(uploadCommand);
       return key;
     } else if (media.mimetype.includes('video')) {
-      const tmp = '/tmp';
       const key = `${generateKey()}.mp4`;
-      const inputPath = `${tmp}/${generateKey()}.${media.mimetype.split('/')[1]}`;
-      const outputPath = `${tmp}/${key}`;
+      const inputPath = `/tmp/${generateKey()}.${media.mimetype.split('/')[1]}`;
+      const outputPath = `/tmp/${key}`;
       await fs.promises.writeFile(inputPath, media.buffer);
       await modifyVideo(inputPath, outputPath);
       const modifiedBuffer = await fs.promises.readFile(outputPath);

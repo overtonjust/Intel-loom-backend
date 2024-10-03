@@ -1,4 +1,4 @@
-const { upload } = require('./db/s3Config.js');
+const { upload } = require('../db/s3Config.js');
 const express = require("express");
 const classes = express.Router();
 const { camelizeKeys } = require("humps");
@@ -73,6 +73,7 @@ classes.post('/class-recording', upload.single('recording'), async (req, res) =>
     const signedUrl = await getSignedUrlFromS3(key);
     res.status(200).json(signedUrl);
   } catch (error) {
+    console.log(error)
     res.status(404).json({ error: error.message });
   }
 });
