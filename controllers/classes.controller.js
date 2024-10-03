@@ -1,3 +1,4 @@
+const { upload } = require('./db/s3Config.js');
 const express = require("express");
 const classes = express.Router();
 const { camelizeKeys } = require("humps");
@@ -9,6 +10,8 @@ const {
   getInstructorClasses,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
+
+const { addToS3, getSignedUrlFromS3 } = require('../aws/s3.commands.js');
 
 classes.get("/", async (req, res) => {
   try {
@@ -63,5 +66,15 @@ classes.get(
     }
   }
 );
+
+classes.post('/class-recording', upload.single('recording'), async (req, res) => {
+  try {
+    const key = await addToS3(req.file);
+    const signedUrl = await getSignedUrlFromS3(key);
+    res.status(200).json(signedUrl);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
 
 module.exports = classes;
