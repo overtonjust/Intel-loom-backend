@@ -1,7 +1,14 @@
 const express = require("express");
 const users = express.Router();
 const { camelizeKeys } = require("humps");
-const { itsNewUsername, itsNewEmail, userLogin, userInfo } = require("../queries/users.queries.js");
+const {
+  userLogin,
+  userInfo,
+  getUserClasses,
+  getInstructorClasses,
+  itsNewUsername,
+  itsNewEmail
+} = require("../queries/users.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 const { validatePassword } = require("../validations/users.validations.js");
 
@@ -66,6 +73,30 @@ users.get("/check-session", (req, res) => {
     res.status(401).json("Session is inactive.");
   }
 });
+
+users.get("/userClasses/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const classes = await getUserClasses(userId);
+    res.status(200).json(camelizeKeys(classes));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+users.get(
+  "/instructorClasses/:instructorId",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const { instructorId } = req.params;
+      const classes = await getInstructorClasses(instructorId);
+      res.status(200).json(camelizeKeys(classes));
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
 
 users.get("/:id", authenticateUser, async (req, res) => {
   try {

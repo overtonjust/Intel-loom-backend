@@ -81,48 +81,8 @@ const getClassStudents = async (id) => {
   }
 };
 
-const getUserClasses = async (id) => {
-  try {
-    const classesIds = await db.any(
-      `
-      SELECT
-        class_id
-      FROM class
-      WHERE user_id = $1`,
-      id
-    );
-    const classes = await Promise.all(
-      classesIds.map((classId) => getClassById(classId.class_id))
-    );
-    return !classes.length ? [] : classes;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getInstructorClasses = async (id) => {
-  try {
-    const classesIds = await db.any(
-      `
-      SELECT
-        class_id
-      FROM classes
-      WHERE classes.instructor_id = $1`,
-      id
-    );
-    const classes = await Promise.all(
-      classesIds.map((classId) => getClassById(classId.class_id))
-    );
-    return !classes.length ? [] : classes;
-  } catch (error) {
-    throw error;
-  }
-};
-
 module.exports = {
   getAllClasses,
   getClassById,
   getClassStudents,
-  getUserClasses,
-  getInstructorClasses,
 };

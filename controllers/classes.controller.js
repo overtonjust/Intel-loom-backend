@@ -6,8 +6,6 @@ const {
   getAllClasses,
   getClassById,
   getClassStudents,
-  getUserClasses,
-  getInstructorClasses,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 
