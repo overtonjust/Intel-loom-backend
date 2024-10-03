@@ -74,7 +74,7 @@ users.get("/check-session", (req, res) => {
   }
 });
 
-users.get("/userClasses/:userId", async (req, res) => {
+users.get("/userClasses/:userId", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.params;
     const classes = await getUserClasses(userId);

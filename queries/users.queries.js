@@ -1,4 +1,6 @@
 const db = require("../db/dbConfig.js");
+const { getSignedUrlFromS3, deleteFromS3, addToS3 } = require('../aws/s3.commands.js');
+const { format_date } = require('../utils.js');
 const bcrypt = require("bcrypt");
 
 const itsNewUsername = async username => {
@@ -37,8 +39,8 @@ const userInfo = async (id) => {
     delete user.password;
     delete user.security_question;
     delete user.security_answer;
-    //const signed_url = await getSignedUrlFromS3(user.profile_picture);
-    //user.profile_picture = signed_url;
+    const signed_url = await getSignedUrlFromS3(user.profile_picture);
+    user.profile_picture = signed_url;
     const instructor_links = await db.any(
       "SELECT link FROM instructor_links WHERE instructor_id = $1",
       id
@@ -47,7 +49,7 @@ const userInfo = async (id) => {
       "SELECT media_key FROM instructor_media WHERE instructor_id = $1",
       id
     );
-    //instructor_media = await Promise.all(instructor_media.map(async ({media_key}) => await getSignedUrlFromS3(media_key)));
+    instructor_media = await Promise.all(instructor_media.map(async ({media_key}) => await getSignedUrlFromS3(media_key)));
     return { ...user, instructor_links, instructor_media };
   } catch (error) {
     throw error;
@@ -56,7 +58,6 @@ const userInfo = async (id) => {
 
 const getUserClasses = async (id) => {
   try {
-    /* const time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone; */
     const classes_info_bulk = await db.any(
       `
       SELECT class_dates.*, classes.*, users.first_name, users.middle_name, users.last_name
@@ -74,7 +75,7 @@ const getUserClasses = async (id) => {
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
         if (!class_map.has(classInfo.class_id)) {
-          //const signed_url = await getSignedUrlFromS3(classInfo.highlight_picture);
+          const signed_url = await getSignedUrlFromS3(classInfo.highlight_picture);
           class_map.set(classInfo.class_id, {
             instructor: {
               instructor_id: classInfo.instructor_id,
@@ -84,30 +85,12 @@ const getUserClasses = async (id) => {
             },
             class_id: classInfo.class_id,
             title: classInfo.title,
-            //highlight_picture: signed_url,
+            highlight_picture: signed_url,
             price: classInfo.price,
           });
         }
       })
     );
-
-    const format_date = date => {
-      const current_date = new Date().toDateString().replaceAll(" ", ",");
-      const class_date_format = new Date(date)
-        .toDateString()
-        .replaceAll(" ", ",");
-      return current_date === class_date_format ? "Today" : class_date_format;
-    }
-    const format_date_time = date => {
-      const [ class_date, class_time ] = new Date(date).toLocaleString().split(", ");
-      const [ h, m ] = class_time.split(":");
-      const current_date = new Date().toDateString();
-      const class_date_format = new Date(class_date).toDateString();
-      const [ day, month, date_num, year ] = class_date_format.split(" ");
-      const formatted_date = `${day} ${month} ${date_num}, ${year}`;
-      return `${current_date === class_date_format ? 'Today' : formatted_date} ${h}:${m} ${h < 12 ? 'AM' : 'PM'}`;
-    }
-
     const formatted_class_info = classes_info_bulk.map((classInfo) => ({
       class_date_id: classInfo.class_date_id,
       class_start: classInfo.class_start,
@@ -152,11 +135,11 @@ const getInstructorClasses = async (id) => {
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
         if (!class_map.has(classInfo.class_id)) {
-          //const signed_url = await getSignedUrlFromS3(classInfo.highlight_picture);
+          const signed_url = await getSignedUrlFromS3(classInfo.highlight_picture);
           class_map.set(classInfo.class_id, {
             class_id: classInfo.class_id,
             title: classInfo.title,
-            //highlight_picture: signed_url,
+            highlight_picture: signed_url,
             price: classInfo.price,
           });
         }
@@ -169,12 +152,7 @@ const getInstructorClasses = async (id) => {
       class_info: class_map.get(classInfo.class_id),
     }));
     const classes_by_date = formatted_class_info.reduce((objAcc, classInfo) => {
-      const current_date = new Date().toDateString().replaceAll(" ", ",");
-      const class_date_format = new Date(classInfo.class_start)
-        .toDateString()
-        .replaceAll(" ", ",");
-      const class_date =
-        current_date === class_date_format ? "today" : class_date_format;
+      const class_date = format_date(classInfo.class_start);
       objAcc[class_date] = (objAcc[class_date] || []).concat(classInfo);
       return objAcc;
     }, {});
