@@ -88,7 +88,7 @@ const getClassById = async (id) => {
       `,
       [class_info_bulk.instructor_id, id]
     );
-    if(more_classes_from_instructor.length) {
+    if (more_classes_from_instructor.length) {
       await Promise.all(
         more_classes_from_instructor.map(async (classInfo) => {
           classInfo.highlight_picture = await getSignedUrlFromS3(
@@ -104,7 +104,7 @@ const getClassById = async (id) => {
       class_info_bulk.highlight_picture
     );
     let class_pictures_signed_urls = [];
-    if(class_pictures.length){
+    if (class_pictures.length) {
       class_pictures_signed_urls = await Promise.all(
         class_pictures.map(
           async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
@@ -155,19 +155,31 @@ const getClassStudents = async (id) => {
   }
 };
 
-const createClassTemplate = async (instructor_id, classInfo, highlight_picture, class_pictures) => {
+const createClassTemplate = async (
+  instructor_id,
+  classInfo,
+  highlight_picture,
+  class_pictures
+) => {
   try {
     const { title, description, price, capacity } = classInfo;
     const highlight_picture_key = await addToS3(highlight_picture);
-    const {class_id} = await db.one(
+    const { class_id } = await db.one(
       `
       INSERT INTO classes (instructor_id, title, description, price, capacity, highlight_picture)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING class_id
       `,
-      [instructor_id, title, description, price, capacity, highlight_picture_key]
+      [
+        instructor_id,
+        title,
+        description,
+        price,
+        capacity,
+        highlight_picture_key,
+      ]
     );
-    if(class_pictures.length){
+    if (class_pictures.length) {
       await Promise.all(
         class_pictures.map(async (picture) => {
           const picture_key = await addToS3(picture);
@@ -175,7 +187,8 @@ const createClassTemplate = async (instructor_id, classInfo, highlight_picture, 
             `
             INSERT INTO class_pictures (class_id, picture_key)
             VALUES ($1, $2)
-            `, [class_id, picture_key]
+            `,
+            [class_id, picture_key]
           );
         })
       );
@@ -186,8 +199,48 @@ const createClassTemplate = async (instructor_id, classInfo, highlight_picture, 
   }
 };
 
+const deleteClassTemplate = async (class_id) => {
+  try {
+    const class_pictures = await db.any(
+      `
+      SELECT picture_key
+      FROM class_pictures
+      WHERE class_id = $1
+      `,
+      class_id
+    );
+    if (class_pictures.length) {
+      await Promise.all(
+        class_pictures.map(async ({ picture_key }) => {
+          await deleteFromS3(picture_key);
+        })
+      );
+    }
+    const {highlight_picture} = await db.one(
+      `
+      SELECT highlight_picture
+      FROM classes
+      WHERE class_id = $1
+      `,
+      class_id
+    );
+    await deleteFromS3(highlight_picture);
+    await db.none(
+      `
+      DELETE FROM classes
+      WHERE class_id = $1
+      `,
+      class_id
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   getAllClasses,
   getClassById,
   getClassStudents,
+  createClassTemplate,
+  deleteClassTemplate,
 };

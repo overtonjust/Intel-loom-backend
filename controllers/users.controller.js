@@ -1,6 +1,6 @@
 const express = require("express");
 const users = express.Router();
-const { upload } = require('../db/s3Config.js');
+const { upload } = require("../db/s3Config.js");
 const { camelizeKeys, decamelizeKeys } = require("humps");
 const {
   userLogin,
@@ -52,7 +52,9 @@ users.post("/validate-email", async (req, res) => {
   if (isNewEmail) {
     res.status(200).json("Email is available.");
   } else {
-    res.status(400).json("Account with that email already exists, please log in?");
+    res
+      .status(400)
+      .json("Account with that email already exists, please log in?");
   }
 });
 
@@ -68,30 +70,51 @@ users.post("/login", async (req, res) => {
   }
 });
 
-users.post('/register', upload.fields([{ name: 'profilePicture', maxCount: 1 }, { name: 'instructorMedia' }]), async (req, res) => {
-  try {
-    const profile_picture = req.files.profilePicture ? req.files.profilePicture[0] : null;
-    const instructor_media = req.files.instructorMedia || [];
-    const user_id = await userSignup(decamelizeKeys(req.body), profile_picture, instructor_media);
-    req.session.userId = user_id;
-    req.session.loggedIn = true;
-    res.status(200).json({ userId: user_id });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+users.post(
+  "/register",
+  upload.fields([
+    { name: "profilePicture", maxCount: 1 },
+    { name: "instructorMedia" },
+  ]),
+  async (req, res) => {
+    try {
+      const profile_picture = req.files.profilePicture
+        ? req.files.profilePicture[0]
+        : null;
+      const instructor_media = req.files.instructorMedia || [];
+      const user_id = await userSignup(
+        decamelizeKeys(req.body),
+        profile_picture,
+        instructor_media
+      );
+      req.session.userId = user_id;
+      req.session.loggedIn = true;
+      res.status(200).json({ userId: user_id });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
-users.put('/change-profile-picture', authenticateUser, upload.single('profilePicture'), async (req, res) => {
-  try {
-    const profile_picture = req.file;
-    const signed_url = await changeProfilePicture(req.session.userId, profile_picture);
-    res.status(200).json(signed_url);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+users.put(
+  "/change-profile-picture",
+  authenticateUser,
+  upload.single("profilePicture"),
+  async (req, res) => {
+    try {
+      const profile_picture = req.file;
+      const signed_url = await changeProfilePicture(
+        req.session.userId,
+        profile_picture
+      );
+      res.status(200).json(signed_url);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
-users.put('/update-profile', authenticateUser, async (req, res) => {
+users.put("/update-profile", authenticateUser, async (req, res) => {
   try {
     const updated_user = await updateProfile(req.session.userId, req.body);
     res.status(200).json(camelizeKeys(updated_user));
@@ -100,17 +123,25 @@ users.put('/update-profile', authenticateUser, async (req, res) => {
   }
 });
 
-users.put('/add-instructor-media', authenticateUser, upload.array('instructorMedia'), async (req, res) => {
-  try {
-    const instructor_media = req.files;
-    const signed_urls = await addInstructorMedia(req.session.userId, instructor_media);
-    res.status(200).json(signed_urls);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+users.put(
+  "/add-instructor-media",
+  authenticateUser,
+  upload.array("instructorMedia"),
+  async (req, res) => {
+    try {
+      const instructor_media = req.files;
+      const signed_urls = await addInstructorMedia(
+        req.session.userId,
+        instructor_media
+      );
+      res.status(200).json(signed_urls);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
-users.delete('/delete-instructor-media', authenticateUser, async (req, res) => {
+users.delete("/delete-instructor-media", authenticateUser, async (req, res) => {
   try {
     await deleteInstructorMedia(req.session.userId, req.body.instructorMedia);
     res.status(200).json("Media deleted successfully.");
@@ -119,7 +150,7 @@ users.delete('/delete-instructor-media', authenticateUser, async (req, res) => {
   }
 });
 
-users.put('/add-instructor-links', authenticateUser, async (req, res) => {
+users.put("/add-instructor-links", authenticateUser, async (req, res) => {
   try {
     await addInstructorLinks(req.session.userId, req.body.instructorLinks);
     res.status(200).json(req.body.instructorLinks);
@@ -128,7 +159,7 @@ users.put('/add-instructor-links', authenticateUser, async (req, res) => {
   }
 });
 
-users.delete('/delete-instructor-links', authenticateUser, async (req, res) => {
+users.delete("/delete-instructor-links", authenticateUser, async (req, res) => {
   try {
     await deleteInstructorLinks(req.session.userId, req.body.instructorLinks);
     res.status(200).json("Links deleted successfully.");
@@ -137,7 +168,7 @@ users.delete('/delete-instructor-links', authenticateUser, async (req, res) => {
   }
 });
 
-users.post('/delete-user', authenticateUser, async (req, res) => {
+users.post("/delete-user", authenticateUser, async (req, res) => {
   try {
     const { email, password } = req.body;
     await userDelete(email, password);
@@ -147,7 +178,7 @@ users.post('/delete-user', authenticateUser, async (req, res) => {
   }
 });
 
-users.put('/change-password', authenticateUser, async (req, res) => {
+users.put("/change-password", authenticateUser, async (req, res) => {
   try {
     const { email, password, newPassword } = req.body;
     await changePassword(email, password, newPassword);
@@ -157,7 +188,7 @@ users.put('/change-password', authenticateUser, async (req, res) => {
   }
 });
 
-users.post('/get-security-question', async (req, res) => {
+users.post("/get-security-question", async (req, res) => {
   try {
     const { email } = req.body;
     const securityQuestion = await getSecurityQuestion(email);
@@ -167,7 +198,7 @@ users.post('/get-security-question', async (req, res) => {
   }
 });
 
-users.post('/check-security-answer', async (req, res) => {
+users.post("/check-security-answer", async (req, res) => {
   try {
     const { email, securityAnswer } = req.body;
     await checkSecurityAnswer(email, securityAnswer);
@@ -177,7 +208,7 @@ users.post('/check-security-answer', async (req, res) => {
   }
 });
 
-users.put('/reset-password', async (req, res) => {
+users.put("/reset-password", async (req, res) => {
   try {
     const { email, newPassword } = req.body;
     await resetPassword(email, newPassword);
@@ -229,33 +260,25 @@ users.get("/userBookmarks", authenticateUser, async (req, res) => {
   }
 });
 
-users.get(
-  "/instructorClasses",
-  authenticateUser,
-  async (req, res) => {
-    try {
-      const { userId } = req.session;
-      const classes = await getInstructorClasses(userId);
-      res.status(200).json(camelizeKeys(classes));
-    } catch (error) {
-      res.status(404).json({ error: error.message });
-    }
+users.get("/instructorClasses", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const classes = await getInstructorClasses(userId);
+    res.status(200).json(camelizeKeys(classes));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
   }
-);
+});
 
-users.get(
-  "/instructorClassTemplates",
-  authenticateUser,
-  async (req, res) => {
-    try {
-      const { userId } = req.session;
-      const classes = await getInstructorClassTemplates(userId);
-      res.status(200).json(camelizeKeys(classes));
-    } catch (error) {
-      res.status(404).json({ error: error.message });
-    }
+users.get("/instructorClassTemplates", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const classes = await getInstructorClassTemplates(userId);
+    res.status(200).json(camelizeKeys(classes));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
   }
-);
+});
 
 users.get(
   "/instructorClassTemplateById/:classId",

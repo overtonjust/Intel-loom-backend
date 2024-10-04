@@ -47,10 +47,10 @@ const changeProfilePicture = async (user_id, profile_picture) => {
     );
     if (user.profile_picture) await deleteFromS3(user.profile_picture);
     const profile_picture_key = await addToS3(profile_picture);
-    await db.none(
-      "UPDATE users SET profile_picture = $1 WHERE user_id = $2",
-      [profile_picture_key, user_id]
-    );
+    await db.none("UPDATE users SET profile_picture = $1 WHERE user_id = $2", [
+      profile_picture_key,
+      user_id,
+    ]);
     const signed_url = await getSignedUrlFromS3(profile_picture_key);
     return signed_url;
   } catch (error) {
@@ -104,7 +104,7 @@ const userSignup = async (user, profile_picture, instructor_media) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const hashedSecurityAnswer = await bcrypt.hash(security_answer, 10);
-    const new_user = await db.one(
+    const { user_id } = await db.one(
       `
       INSERT INTO users
       (first_name, middle_name, last_name, username, birth_date, email, password, security_question, security_answer, is_instructor, github, gitlab, linkedin, youtube, bio, profile_picture)
@@ -142,7 +142,7 @@ const userSignup = async (user, profile_picture, instructor_media) => {
               VALUES
               ($1, $2)
               `,
-              [new_user.user_id, link]
+              [user_id, link]
             )
           )
         );
@@ -162,7 +162,7 @@ const userSignup = async (user, profile_picture, instructor_media) => {
               VALUES
               ($1, $2)
               `,
-              [new_user.user_id, media_key]
+              [user_id, media_key]
             );
           })
         );
@@ -170,7 +170,7 @@ const userSignup = async (user, profile_picture, instructor_media) => {
         throw new Error("Problem uploading instructor media");
       }
     }
-    return new_user.user_id;
+    return user_id;
   } catch (error) {
     throw error;
   }
@@ -178,7 +178,7 @@ const userSignup = async (user, profile_picture, instructor_media) => {
 
 const addInstructorMedia = async (instructor_id, instructor_media) => {
   try {
-   const media_keys = await Promise.all(
+    const media_keys = await Promise.all(
       instructor_media.map(async (media) => {
         const media_key = await addToS3(media);
         await db.none(
@@ -217,7 +217,6 @@ const deleteInstructorMedia = async (instructor_id, instructor_media) => {
         );
       })
     );
-    return "Media deleted";
   } catch (error) {
     throw error;
   }
@@ -226,19 +225,19 @@ const deleteInstructorMedia = async (instructor_id, instructor_media) => {
 const addInstructorLinks = async (instructor_id, instructor_links) => {
   try {
     await Promise.all(
-      instructor_links.map(async (link) =>
-        await db.none(
-          `
+      instructor_links.map(
+        async (link) =>
+          await db.none(
+            `
           INSERT INTO instructor_links
           (instructor_id, link)
           VALUES
           ($1, $2)
           `,
-          [instructor_id, link]
-        )
+            [instructor_id, link]
+          )
       )
     );
-    return 'Links added';
   } catch (error) {
     throw error;
   }
@@ -247,18 +246,18 @@ const addInstructorLinks = async (instructor_id, instructor_links) => {
 const deleteInstructorLinks = async (instructor_id, instructor_links) => {
   try {
     await Promise.all(
-      instructor_links.map(async (link) =>
-        await db.none(
-          `
+      instructor_links.map(
+        async (link) =>
+          await db.none(
+            `
           DELETE FROM instructor_links
           WHERE instructor_id = $1
           AND link = $2
           `,
-          [instructor_id, link]
-        )
+            [instructor_id, link]
+          )
       )
     );
-    return "Links deleted";
   } catch (error) {
     throw error;
   }
@@ -273,19 +272,40 @@ const userDelete = async (email, password) => {
     if (!user) throw new Error("Invalid Credentials");
     const passwordMatched = await bcrypt.compare(password, user.password);
     if (!passwordMatched) throw new Error("Invalid Credentials");
-    const instructor_media = await db.any('SELECT media_key FROM instructor_media WHERE instructor_id = $1', user.user_id);
-    const instructor_classes = await db.any('SELECT class_id, highlight_picture FROM classes WHERE instructor_id = $1', user.user_id);
-    if(user.profile_picture) await deleteFromS3(user.profile_picture);
-    if(instructor_media.length) await Promise.all(instructor_media.map(async ({ media_key }) => await deleteFromS3(media_key)));
-    if(instructor_classes.length) {
-      await Promise.all(instructor_classes.map(async ({ class_id, highlight_picture }) => {
-        if(highlight_picture) await deleteFromS3(highlight_picture);
-        const class_pictures = await db.any('SELECT picture_key FROM class_pictures WHERE class_id = $1', class_id);
-        if(class_pictures.length) await Promise.all(class_pictures.map(async ({ picture_key }) => await deleteFromS3(picture_key)));
-      }));
+    const instructor_media = await db.any(
+      "SELECT media_key FROM instructor_media WHERE instructor_id = $1",
+      user.user_id
+    );
+    const instructor_classes = await db.any(
+      "SELECT class_id, highlight_picture FROM classes WHERE instructor_id = $1",
+      user.user_id
+    );
+    if (user.profile_picture) await deleteFromS3(user.profile_picture);
+    if (instructor_media.length) {
+      await Promise.all(
+        instructor_media.map(
+          async ({ media_key }) => await deleteFromS3(media_key)
+        )
+      );
+    }
+    if (instructor_classes.length) {
+      await Promise.all(
+        instructor_classes.map(async ({ class_id, highlight_picture }) => {
+          if (highlight_picture) await deleteFromS3(highlight_picture);
+          const class_pictures = await db.any(
+            "SELECT picture_key FROM class_pictures WHERE class_id = $1",
+            class_id
+          );
+          if (class_pictures.length)
+            await Promise.all(
+              class_pictures.map(
+                async ({ picture_key }) => await deleteFromS3(picture_key)
+              )
+            );
+        })
+      );
     }
     await db.none("DELETE FROM users WHERE email = $1", email);
-    return "User deleted";
   } catch (error) {
     throw error;
   }
@@ -305,7 +325,6 @@ const changePassword = async (email, password, newPassword) => {
       hashedPassword,
       email,
     ]);
-    return "Password changed";
   } catch (error) {
     throw error;
   }
@@ -336,7 +355,6 @@ const checkSecurityAnswer = async (email, security_answer) => {
       user.security_answer
     );
     if (!securityAnswerMatched) throw new Error("Invalid Credentials");
-    return "Security answer matched";
   } catch (error) {
     throw error;
   }
@@ -349,7 +367,6 @@ const resetPassword = async (email, newPassword) => {
       hashedPassword,
       email,
     ]);
-    return "Password reset";
   } catch (error) {
     throw error;
   }
