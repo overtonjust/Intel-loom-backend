@@ -216,7 +216,7 @@ const deleteClassTemplate = async (class_id) => {
         })
       );
     }
-    const {highlight_picture} = await db.one(
+    const { highlight_picture } = await db.one(
       `
       SELECT highlight_picture
       FROM classes
@@ -237,10 +237,79 @@ const deleteClassTemplate = async (class_id) => {
   }
 };
 
+const updateClassTemplate = async (class_id, classInfo) => {
+  try {
+    const { title, description, price, capacity } = classInfo;
+    await db.none(
+      `
+      UPDATE classes
+      SET title = $1, description = $2, price = $3, capacity = $4
+      WHERE class_id = $5
+      `,
+      [title, description, price, capacity, class_id]
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+const updateClassPictures = async (
+  class_id,
+  class_pictures,
+  remove_selected,
+  highlight_picture
+) => {
+  try {
+    if (remove_selected.length) {
+      await Promise.all(
+        remove_selected.map(async (picture_key) => {
+          await deleteFromS3(picture_key);
+          await db.none(
+            `
+            DELETE FROM class_pictures
+            WHERE picture_key = $1
+            `,
+            picture_key
+          );
+        })
+      );
+    }
+    if (class_pictures.length) {
+      await Promise.all(
+        class_pictures.map(async (picture) => {
+          const picture_key = await addToS3(picture);
+          await db.none(
+            `
+            INSERT INTO class_pictures (class_id, picture_key)
+            VALUES ($1, $2)
+            `,
+            [class_id, picture_key]
+          );
+        })
+      );
+    }
+    if (highlight_picture) {
+      const highlight_picture_key = await addToS3(highlight_picture);
+      await db.none(
+        `
+        UPDATE classes
+        SET highlight_picture = $1
+        WHERE class_id = $2
+        `,
+        [highlight_picture_key, class_id]
+      );
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   getAllClasses,
   getClassById,
   getClassStudents,
   createClassTemplate,
   deleteClassTemplate,
+  updateClassTemplate,
+  updateClassPictures,
 };

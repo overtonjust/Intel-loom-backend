@@ -8,6 +8,8 @@ const {
   getClassStudents,
   createClassTemplate,
   deleteClassTemplate,
+  updateClassTemplate,
+  updateClassPictures,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 
@@ -49,6 +51,7 @@ classes.get(
 
 classes.post(
   "/create-class",
+  authenticateUser,
   upload.fields([
     { name: "highlightPicture", maxCount: 1 },
     { name: "classPictures" },
@@ -75,14 +78,57 @@ classes.delete("/delete-class/:classId", authenticateUser, async (req, res) => {
   try {
     const { classId } = req.params;
     await deleteClassTemplate(classId);
-    res.status(200).json("Class deleted" );
+    res.status(200).json("Class deleted");
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
 });
 
+classes.put(
+  "/update-class-info/:classId",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const { classId } = req.params;
+      await updateClassTemplate(classId, req.body);
+      res.status(200).json("Class updated successfully.");
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
+
+classes.put(
+  "/update-class-pictures/:classId",
+  authenticateUser,
+  upload.fields([
+    { name: "highlightPicture", maxCount: 1 },
+    { name: "classPictures" },
+  ]),
+  async (req, res) => {
+    try {
+      const { classId } = req.params;
+      const highlight_picture = req.files.highlightPicture
+        ? req.files.highlightPicture[0]
+        : null;
+      const class_pictures = req.files.classPictures || [];
+      const { removeSelected } = req.body;
+      await updateClassPictures(
+        classId,
+        class_pictures,
+        removeSelected,
+        highlight_picture
+      );
+      res.status(200).json("Class pictures updated successfully.");
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
+
 classes.post(
   "/class-recording",
+  authenticateUser,
   upload.single("recording"),
   async (req, res) => {
     try {
