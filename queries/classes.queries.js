@@ -304,6 +304,22 @@ const updateClassPictures = async (
   }
 };
 
+const addClassDate = async (class_id, class_dates) => {
+  try {
+    const { class_start, class_end } = class_dates;
+    const class_date = await db.one(
+      `
+      INSERT INTO class_dates (class_id, class_start, class_end)
+      VALUES ($1, $2, $3) RETURNING *
+      `,
+      [class_id, class_start, class_end]
+    );
+    return class_date;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   getAllClasses,
   getClassById,
@@ -312,4 +328,5 @@ module.exports = {
   deleteClassTemplate,
   updateClassTemplate,
   updateClassPictures,
+  addClassDate,
 };

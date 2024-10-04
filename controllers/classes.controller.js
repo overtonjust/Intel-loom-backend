@@ -1,7 +1,7 @@
 const { upload } = require("../db/s3Config.js");
 const express = require("express");
 const classes = express.Router();
-const { camelizeKeys } = require("humps");
+const { camelizeKeys, decamelizeKeys } = require("humps");
 const {
   getAllClasses,
   getClassById,
@@ -10,6 +10,7 @@ const {
   deleteClassTemplate,
   updateClassTemplate,
   updateClassPictures,
+  addClassDate,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 
@@ -120,6 +121,20 @@ classes.put(
         highlight_picture
       );
       res.status(200).json("Class pictures updated successfully.");
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
+
+classes.post(
+  "/add-class-date/:classId",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const { classId } = req.params;
+      const class_date = await addClassDate(classId, decamelizeKeys(req.body));
+      res.status(200).json(camelizeKeys(class_date));
     } catch (error) {
       res.status(404).json({ error: error.message });
     }
