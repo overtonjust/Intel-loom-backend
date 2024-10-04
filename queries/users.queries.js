@@ -39,6 +39,43 @@ const userLogin = async (email, password) => {
   }
 };
 
+const changeProfilePicture = async (user_id, profile_picture) => {
+  try {
+    const user = await db.one(
+      "SELECT profile_picture FROM users WHERE user_id = $1",
+      user_id
+    );
+    if (user.profile_picture) await deleteFromS3(user.profile_picture);
+    const profile_picture_key = await addToS3(profile_picture);
+    await db.none(
+      "UPDATE users SET profile_picture = $1 WHERE user_id = $2",
+      [profile_picture_key, user_id]
+    );
+    const signed_url = await getSignedUrlFromS3(profile_picture_key);
+    return signed_url;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const updateProfile = async (user_id, user) => {
+  try {
+    const { bio, github, gitlab, linkedin, youtube } = user;
+    await db.none(
+      `
+      UPDATE users
+      SET bio = $1, github = $2, gitlab = $3, linkedin = $4, youtube = $5
+      WHERE user_id = $6
+      `,
+      [bio, github, gitlab, linkedin, youtube, user_id]
+    );
+    const updated_user = await userInfo(user_id);
+    return updated_user;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const userSignup = async (user, profile_picture, instructor_media) => {
   try {
     const {
@@ -580,6 +617,8 @@ module.exports = {
   itsNewUsername,
   itsNewEmail,
   userLogin,
+  changeProfilePicture,
+  updateProfile,
   userSignup,
   addInstructorMedia,
   deleteInstructorMedia,

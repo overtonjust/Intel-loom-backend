@@ -4,6 +4,8 @@ const { upload } = require('../db/s3Config.js');
 const { camelizeKeys, decamelizeKeys } = require("humps");
 const {
   userLogin,
+  changeProfilePicture,
+  updateProfile,
   userSignup,
   userDelete,
   addInstructorMedia,
@@ -74,6 +76,25 @@ users.post('/register', upload.fields([{ name: 'profilePicture', maxCount: 1 }, 
     req.session.userId = user_id;
     req.session.loggedIn = true;
     res.status(200).json({ userId: user_id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+users.put('/change-profile-picture', authenticateUser, upload.single('profilePicture'), async (req, res) => {
+  try {
+    const profile_picture = req.file;
+    const signed_url = await changeProfilePicture(req.session.userId, profile_picture);
+    res.status(200).json(signed_url);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+users.put('/update-profile', authenticateUser, async (req, res) => {
+  try {
+    const updated_user = await updateProfile(req.session.userId, req.body);
+    res.status(200).json(camelizeKeys(updated_user));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -188,9 +209,9 @@ users.get("/check-session", (req, res) => {
   }
 });
 
-users.get("/userClasses/:userId", async (req, res) => {
+users.get("/userClasses", async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.session;
     const classes = await getUserClasses(userId);
     res.status(200).json(camelizeKeys(classes));
   } catch (error) {
@@ -198,9 +219,9 @@ users.get("/userClasses/:userId", async (req, res) => {
   }
 });
 
-users.get("/userBookmarks/:userId", authenticateUser, async (req, res) => {
+users.get("/userBookmarks", authenticateUser, async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { userId } = req.session;
     const bookmarks = await getUserBookmarks(userId);
     res.status(200).json(camelizeKeys(bookmarks));
   } catch (error) {
@@ -209,12 +230,12 @@ users.get("/userBookmarks/:userId", authenticateUser, async (req, res) => {
 });
 
 users.get(
-  "/instructorClasses/:instructorId",
+  "/instructorClasses",
   authenticateUser,
   async (req, res) => {
     try {
-      const { instructorId } = req.params;
-      const classes = await getInstructorClasses(instructorId);
+      const { userId } = req.session;
+      const classes = await getInstructorClasses(userId);
       res.status(200).json(camelizeKeys(classes));
     } catch (error) {
       res.status(404).json({ error: error.message });
@@ -223,12 +244,12 @@ users.get(
 );
 
 users.get(
-  "/instructorClassTemplates/:instructorId",
+  "/instructorClassTemplates",
   authenticateUser,
   async (req, res) => {
     try {
-      const { instructorId } = req.params;
-      const classes = await getInstructorClassTemplates(instructorId);
+      const { userId } = req.session;
+      const classes = await getInstructorClassTemplates(userId);
       res.status(200).json(camelizeKeys(classes));
     } catch (error) {
       res.status(404).json({ error: error.message });
@@ -250,11 +271,10 @@ users.get(
   }
 );
 
-users.get("/:id", authenticateUser, async (req, res) => {
+users.get("/profile", authenticateUser, async (req, res) => {
   try {
-    const { id } = req.params;
-    const user = await userInfo(id);
-    delete user.password;
+    const { userId } = req.session;
+    const user = await userInfo(userId);
     res.status(200).json(camelizeKeys(user));
   } catch (error) {
     res.status(404).json({ error: error.message });

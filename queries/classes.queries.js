@@ -14,7 +14,7 @@ const getAllClasses = async (page = 1) => {
       FROM classes
       JOIN users ON classes.instructor_id = users.user_id
       JOIN class_dates ON classes.class_id = class_dates.class_id
-      WHERE class_dates.class_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York' >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
+      WHERE class_dates.class_start >= NOW()
       GROUP BY classes.class_id, users.user_id
       ORDER BY classes.class_id
       LIMIT 21 OFFSET $1
@@ -65,7 +65,7 @@ const getClassById = async (id) => {
       SELECT class_dates.*
       FROM class_dates
       WHERE class_dates.class_id = $1
-      AND class_dates.class_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York' >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
+      AND class_dates.class_start >= NOW()
       ORDER BY class_dates.class_start
       `,
       id
@@ -78,17 +78,39 @@ const getClassById = async (id) => {
       `,
       id
     );
+    const more_classes_from_instructor = await db.any(
+      `
+      SELECT classes.class_id, classes.title, classes.price, classes.highlight_picture
+      FROM classes
+      WHERE classes.instructor_id = $1
+      AND classes.class_id != $2
+      ORDER BY classes.class_id
+      `,
+      [class_info_bulk.instructor_id, id]
+    );
+    if(more_classes_from_instructor.length) {
+      await Promise.all(
+        more_classes_from_instructor.map(async (classInfo) => {
+          classInfo.highlight_picture = await getSignedUrlFromS3(
+            classInfo.highlight_picture
+          );
+        })
+      );
+    }
     const profile_picture_signed_url = await getSignedUrlFromS3(
       class_info_bulk.profile_picture
     );
     const highlight_picture_signed_url = await getSignedUrlFromS3(
       class_info_bulk.highlight_picture
     );
-    const class_pictures_signed_urls = await Promise.all(
-      class_pictures.map(
-        async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
-      )
-    );
+    let class_pictures_signed_urls = [];
+    if(class_pictures.length){
+      class_pictures_signed_urls = await Promise.all(
+        class_pictures.map(
+          async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
+        )
+      );
+    }
     const formatted_class_info = {
       class_id: class_info_bulk.class_id,
       title: class_info_bulk.title,
@@ -108,6 +130,7 @@ const getClassById = async (id) => {
         highlight_picture_signed_url,
         ...class_pictures_signed_urls,
       ],
+      more_classes_from_instructor,
     };
     return formatted_class_info;
   } catch (error) {
@@ -127,6 +150,37 @@ const getClassStudents = async (id) => {
       id
     );
     return students;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const createClassTemplate = async (instructor_id, classInfo, highlight_picture, class_pictures) => {
+  try {
+    const { title, description, price, capacity } = classInfo;
+    const highlight_picture_key = await addToS3(highlight_picture);
+    const {class_id} = await db.one(
+      `
+      INSERT INTO classes (instructor_id, title, description, price, capacity, highlight_picture)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING class_id
+      `,
+      [instructor_id, title, description, price, capacity, highlight_picture_key]
+    );
+    if(class_pictures.length){
+      await Promise.all(
+        class_pictures.map(async (picture) => {
+          const picture_key = await addToS3(picture);
+          await db.none(
+            `
+            INSERT INTO class_pictures (class_id, picture_key)
+            VALUES ($1, $2)
+            `, [class_id, picture_key]
+          );
+        })
+      );
+    }
+    return class_id;
   } catch (error) {
     throw error;
   }
