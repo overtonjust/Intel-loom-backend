@@ -31,39 +31,15 @@ classes.get("/classInfo/:classId", async (req, res) => {
   }
 });
 
-classes.get("/classStudents/:classId", authenticateUser, async (req, res) => {
+classes.get("/classStudents/:classDateId", async (req, res) => {
   try {
-    const { classId } = req.params;
-    const students = await getClassStudents(classId);
+    const { classDateId } = req.params;
+    const students = await getClassStudents(classDateId);
     res.status(200).json(camelizeKeys(students));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
 });
-
-classes.get("/userClasses/:userId", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const classes = await getUserClasses(userId);
-    res.status(200).json(camelizeKeys(classes));
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-classes.get(
-  "/instructorClasses/:instructorId",
-  authenticateUser,
-  async (req, res) => {
-    try {
-      const { instructorId } = req.params;
-      const classes = await getInstructorClasses(instructorId);
-      res.status(200).json(camelizeKeys(classes));
-    } catch (error) {
-      res.status(404).json({ error: error.message });
-    }
-  }
-);
 
 classes.post('/class-recording', upload.single('recording'), async (req, res) => {
   try {

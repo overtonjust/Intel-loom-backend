@@ -1,29 +1,49 @@
 const db = require("../db/dbConfig.js");
-const { userInfo } = require("./users.queries.js");
+const {
+  getSignedUrlFromS3,
+  deleteFromS3,
+  addToS3,
+} = require("../aws/s3.commands.js");
 
-const getAllClasses = async (page = 1, limit = 20) => {
+const getAllClasses = async (page = 1) => {
   try {
-    const offset = (page - 1) * limit;
-    const classes = await db.any(
+    const offset = (page - 1) * 20;
+    const classes_info_bulk = await db.any(
       `
-      SELECT 
-        classes.*,
-        json_build_object(
-          'instructor_id', users.user_id,
-          'first_name', users.first_name,
-          'middle_name', users.middle_name,
-          'last_name', users.last_name 
-        ) AS instructor
+      SELECT classes.*, users.first_name, users.middle_name, users.last_name, MIN(class_dates.class_start) AS class_start 
       FROM classes
-      LEFT JOIN users ON classes.instructor_id = users.user_id
-      WHERE class_date >= NOW()
-      ORDER BY class_date ASC
-      LIMIT $1 OFFSET $2`,
-      [limit + 1, offset]
+      JOIN users ON classes.instructor_id = users.user_id
+      JOIN class_dates ON classes.class_id = class_dates.class_id
+      WHERE class_dates.class_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York' >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
+      GROUP BY classes.class_id, users.user_id
+      ORDER BY classes.class_id
+      LIMIT 21 OFFSET $1
+      `,
+      offset
     );
-    const more_classes = classes.length > limit;
-    if (more_classes) classes.pop();
-    return { classes, more_classes };
+    const more_classes = classes_info_bulk.length > 20;
+    if (more_classes) classes_info_bulk.pop();
+    if (!classes_info_bulk) return { classes: [], more_classes: false };
+    const formatted_class_info = await Promise.all(
+      classes_info_bulk.map(async (classInfo) => {
+        const signed_url = await getSignedUrlFromS3(
+          classInfo.highlight_picture
+        );
+        return {
+          class_id: classInfo.class_id,
+          title: classInfo.title,
+          price: classInfo.price,
+          highlight_picture: signed_url,
+          instructor: {
+            instructor_id: classInfo.instructor_id,
+            first_name: classInfo.first_name,
+            middle_name: classInfo.middle_name,
+            last_name: classInfo.last_name,
+          },
+        };
+      })
+    );
+    return { classes: formatted_class_info, more_classes };
   } catch (error) {
     throw error;
   }
@@ -31,32 +51,65 @@ const getAllClasses = async (page = 1, limit = 20) => {
 
 const getClassById = async (id) => {
   try {
-    const classById = await db.oneOrNone(
+    const class_info_bulk = await db.oneOrNone(
       `
-      SELECT 
-        classes.*,
-        COALESCE(
-          json_agg(class_pictures.picture_key)
-          FILTER (WHERE class_pictures.picture_key IS NOT NULL), '[]'
-        ) AS class_pictures,
-        json_build_object(
-          'instructor_id', users.user_id,
-          'first_name', users.first_name,
-          'middle_name', users.middle_name,
-          'last_name', users.last_name,
-          'email', users.email,
-          'profile_picture', users.profile_picture,
-          'bio', users.bio
-        ) AS instructor
+      SELECT classes.*, users.first_name, users.middle_name, users.last_name, users.email, users.profile_picture, users.bio
       FROM classes
-      LEFT JOIN users ON classes.instructor_id = users.user_id
-      LEFT JOIN class_pictures ON classes.class_id = class_pictures.class_id
+      JOIN users ON classes.instructor_id = users.user_id
       WHERE classes.class_id = $1
-      GROUP BY classes.class_id, users.user_id`,
+      `,
       id
     );
-    if (!classById) throw new Error("Class not found");
-    return classById;
+    const class_dates = await db.any(
+      `
+      SELECT class_dates.*
+      FROM class_dates
+      WHERE class_dates.class_id = $1
+      AND class_dates.class_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York' >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
+      ORDER BY class_dates.class_start
+      `,
+      id
+    );
+    const class_pictures = await db.any(
+      `
+      SELECT class_pictures.picture_key
+      FROM class_pictures
+      WHERE class_pictures.class_id = $1
+      `,
+      id
+    );
+    const profile_picture_signed_url = await getSignedUrlFromS3(
+      class_info_bulk.profile_picture
+    );
+    const highlight_picture_signed_url = await getSignedUrlFromS3(
+      class_info_bulk.highlight_picture
+    );
+    const class_pictures_signed_urls = await Promise.all(
+      class_pictures.map(
+        async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
+      )
+    );
+    const formatted_class_info = {
+      class_id: class_info_bulk.class_id,
+      title: class_info_bulk.title,
+      price: class_info_bulk.price,
+      highlight_picture: highlight_picture_signed_url,
+      instructor: {
+        instructor_id: class_info_bulk.instructor_id,
+        first_name: class_info_bulk.first_name,
+        middle_name: class_info_bulk.middle_name,
+        last_name: class_info_bulk.last_name,
+        email: class_info_bulk.email,
+        profile_picture: profile_picture_signed_url,
+        bio: class_info_bulk.bio,
+      },
+      class_dates,
+      class_pictures: [
+        highlight_picture_signed_url,
+        ...class_pictures_signed_urls,
+      ],
+    };
+    return formatted_class_info;
   } catch (error) {
     throw error;
   }
@@ -64,18 +117,16 @@ const getClassById = async (id) => {
 
 const getClassStudents = async (id) => {
   try {
-    const studentsIds = await db.any(
+    const students = await db.any(
       `
       SELECT
-        class.user_id
-      FROM class
-      WHERE class_id = $1`,
+      users.user_id, users.first_name, users.middle_name, users.last_name, users.email, users.profile_picture, users.bio
+      FROM booked_classes
+      JOIN users ON booked_classes.user_id = users.user_id
+      WHERE class_date_id = $1`,
       id
     );
-    const students = await Promise.all(
-      studentsIds.map((studentId) => userInfo(studentId.user_id))
-    );
-    return !students.length ? [] : students;
+    return students;
   } catch (error) {
     throw error;
   }
