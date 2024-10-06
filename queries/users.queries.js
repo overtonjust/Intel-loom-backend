@@ -39,43 +39,6 @@ const userLogin = async (email, password) => {
   }
 };
 
-const changeProfilePicture = async (user_id, profile_picture) => {
-  try {
-    const user = await db.one(
-      "SELECT profile_picture FROM users WHERE user_id = $1",
-      user_id
-    );
-    if (user.profile_picture) await deleteFromS3(user.profile_picture);
-    const profile_picture_key = await addToS3(profile_picture);
-    await db.none("UPDATE users SET profile_picture = $1 WHERE user_id = $2", [
-      profile_picture_key,
-      user_id,
-    ]);
-    const signed_url = await getSignedUrlFromS3(profile_picture_key);
-    return signed_url;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const updateProfile = async (user_id, user) => {
-  try {
-    const { bio, github, gitlab, linkedin, youtube } = user;
-    await db.none(
-      `
-      UPDATE users
-      SET bio = $1, github = $2, gitlab = $3, linkedin = $4, youtube = $5
-      WHERE user_id = $6
-      `,
-      [bio, github, gitlab, linkedin, youtube, user_id]
-    );
-    const updated_user = await userInfo(user_id);
-    return updated_user;
-  } catch (error) {
-    throw error;
-  }
-};
-
 const userSignup = async (user, profile_picture, instructor_media) => {
   try {
     const {
@@ -176,88 +139,69 @@ const userSignup = async (user, profile_picture, instructor_media) => {
   }
 };
 
-const addInstructorMedia = async (instructor_id, instructor_media) => {
+const userInfo = async (id) => {
   try {
-    const media_keys = await Promise.all(
-      instructor_media.map(async (media) => {
-        const media_key = await addToS3(media);
-        await db.none(
-          `
-          INSERT INTO instructor_media
-          (instructor_id, media_key)
-          VALUES
-          ($1, $2)
-          `,
-          [instructor_id, media_key]
-        );
-        return media_key;
-      })
+    const user = await db.oneOrNone(
+      "SELECT * FROM users WHERE user_id = $1",
+      id
     );
-    const signed_urls = await Promise.all(
-      media_keys.map(async (media_key) => await getSignedUrlFromS3(media_key))
+    if (!user) throw new Error("User not found");
+    delete user.password;
+    delete user.security_question;
+    delete user.security_answer;
+    const signed_url = await getSignedUrlFromS3(user.profile_picture);
+    user.profile_picture = signed_url;
+    const instructor_links = await db.any(
+      "SELECT link FROM instructor_links WHERE instructor_id = $1",
+      id
     );
-    return signed_urls;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const deleteInstructorMedia = async (instructor_id, instructor_media) => {
-  try {
-    await Promise.all(
-      instructor_media.map(async (media_key) => {
-        await deleteFromS3(media_key);
-        await db.none(
-          `
-          DELETE FROM instructor_media
-          WHERE instructor_id = $1
-          AND media_key = $2
-          `,
-          [instructor_id, media_key]
-        );
-      })
+    let instructor_media = await db.any(
+      "SELECT media_key FROM instructor_media WHERE instructor_id = $1",
+      id
     );
-  } catch (error) {
-    throw error;
-  }
-};
-
-const addInstructorLinks = async (instructor_id, instructor_links) => {
-  try {
-    await Promise.all(
-      instructor_links.map(
-        async (link) =>
-          await db.none(
-            `
-          INSERT INTO instructor_links
-          (instructor_id, link)
-          VALUES
-          ($1, $2)
-          `,
-            [instructor_id, link]
-          )
+    instructor_media = await Promise.all(
+      instructor_media.map(
+        async ({ media_key }) => await getSignedUrlFromS3(media_key)
       )
     );
+    return { ...user, instructor_links, instructor_media };
   } catch (error) {
     throw error;
   }
 };
 
-const deleteInstructorLinks = async (instructor_id, instructor_links) => {
+const changeProfilePicture = async (user_id, profile_picture) => {
   try {
-    await Promise.all(
-      instructor_links.map(
-        async (link) =>
-          await db.none(
-            `
-          DELETE FROM instructor_links
-          WHERE instructor_id = $1
-          AND link = $2
-          `,
-            [instructor_id, link]
-          )
-      )
+    const user = await db.one(
+      "SELECT profile_picture FROM users WHERE user_id = $1",
+      user_id
     );
+    if (user.profile_picture) await deleteFromS3(user.profile_picture);
+    const profile_picture_key = await addToS3(profile_picture);
+    await db.none("UPDATE users SET profile_picture = $1 WHERE user_id = $2", [
+      profile_picture_key,
+      user_id,
+    ]);
+    const signed_url = await getSignedUrlFromS3(profile_picture_key);
+    return signed_url;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const updateProfile = async (user_id, user) => {
+  try {
+    const { bio, github, gitlab, linkedin, youtube } = user;
+    await db.none(
+      `
+      UPDATE users
+      SET bio = $1, github = $2, gitlab = $3, linkedin = $4, youtube = $5
+      WHERE user_id = $6
+      `,
+      [bio, github, gitlab, linkedin, youtube, user_id]
+    );
+    const updated_user = await userInfo(user_id);
+    return updated_user;
   } catch (error) {
     throw error;
   }
@@ -372,37 +316,6 @@ const resetPassword = async (email, newPassword) => {
   }
 };
 
-const userInfo = async (id) => {
-  try {
-    const user = await db.oneOrNone(
-      "SELECT * FROM users WHERE user_id = $1",
-      id
-    );
-    if (!user) throw new Error("User not found");
-    delete user.password;
-    delete user.security_question;
-    delete user.security_answer;
-    const signed_url = await getSignedUrlFromS3(user.profile_picture);
-    user.profile_picture = signed_url;
-    const instructor_links = await db.any(
-      "SELECT link FROM instructor_links WHERE instructor_id = $1",
-      id
-    );
-    let instructor_media = await db.any(
-      "SELECT media_key FROM instructor_media WHERE instructor_id = $1",
-      id
-    );
-    instructor_media = await Promise.all(
-      instructor_media.map(
-        async ({ media_key }) => await getSignedUrlFromS3(media_key)
-      )
-    );
-    return { ...user, instructor_links, instructor_media };
-  } catch (error) {
-    throw error;
-  }
-};
-
 const getUserClasses = async (id) => {
   try {
     const classes_info_bulk = await db.any(
@@ -467,125 +380,6 @@ const getUserClasses = async (id) => {
   }
 };
 
-const getInstructorClasses = async (id) => {
-  try {
-    const classes_info_bulk = await db.any(
-      `
-      SELECT classes.*, class_dates.*
-      FROM classes
-      JOIN class_dates ON classes.class_id = class_dates.class_id
-      WHERE classes.instructor_id = $1
-      AND class_dates.class_start >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
-      `,
-      id
-    );
-    if (!classes_info_bulk.length) return [];
-    const class_map = new Map();
-    await Promise.all(
-      classes_info_bulk.map(async (classInfo) => {
-        if (!class_map.has(classInfo.class_id)) {
-          const signed_url = await getSignedUrlFromS3(
-            classInfo.highlight_picture
-          );
-          class_map.set(classInfo.class_id, {
-            class_id: classInfo.class_id,
-            title: classInfo.title,
-            highlight_picture: signed_url,
-            price: classInfo.price,
-          });
-        }
-      })
-    );
-    const formatted_class_info = classes_info_bulk.map((classInfo) => ({
-      class_date_id: classInfo.class_date_id,
-      class_start: classInfo.class_start,
-      class_end: classInfo.class_end,
-      class_info: class_map.get(classInfo.class_id),
-    }));
-    const classes_by_date = formatted_class_info.reduce((objAcc, classInfo) => {
-      const class_date = format_date(classInfo.class_start);
-      objAcc[class_date] = (objAcc[class_date] || []).concat(classInfo);
-      return objAcc;
-    }, {});
-    const sorted_classes_by_date = Object.keys(classes_by_date)
-      .sort(
-        (a, b) =>
-          new Date(classes_by_date[a][0].class_start) -
-          new Date(classes_by_date[b][0].class_start)
-      )
-      .reduce((objAcc, key) => {
-        objAcc[key] = classes_by_date[key];
-        return objAcc;
-      }, {});
-    return sorted_classes_by_date;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getInstructorClassTemplates = async (id) => {
-  try {
-    const class_templates = await db.any(
-      `
-      SELECT classes.class_id, classes.title
-      FROM classes 
-      WHERE instructor_id = $1
-      `,
-      id
-    );
-    return class_templates;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getInstructorClassById = async (id) => {
-  try {
-    const class_info_bulk = await db.oneOrNone(
-      "SELECT * FROM classes WHERE classes.class_id = $1",
-      id
-    );
-    const class_dates = await db.any(
-      `
-      SELECT class_dates.*
-      FROM class_dates
-      WHERE class_dates.class_id = $1
-      AND class_dates.class_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York' >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
-      ORDER BY class_dates.class_start
-      `,
-      id
-    );
-    const class_pictures = await db.any(
-      `
-      SELECT class_pictures.picture_key
-      FROM class_pictures
-      WHERE class_pictures.class_id = $1
-      `,
-      id
-    );
-    const highlight_picture_signed_url = await getSignedUrlFromS3(
-      class_info_bulk.highlight_picture
-    );
-    const class_pictures_signed_urls = await Promise.all(
-      class_pictures.map(
-        async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
-      )
-    );
-    class_info_bulk.highlight_picture = highlight_picture_signed_url;
-    const formatted_class_info = {
-      ...class_info_bulk,
-      class_dates,
-      class_pictures: [
-        highlight_picture_signed_url,
-        ...class_pictures_signed_urls,
-      ],
-    };
-    return formatted_class_info;
-  } catch (error) {
-    throw error;
-  }
-};
-
 const getUserBookmarks = async (id) => {
   try {
     const bookmarks_info_bulk = await db.any(
@@ -634,22 +428,15 @@ module.exports = {
   itsNewUsername,
   itsNewEmail,
   userLogin,
+  userSignup,
+  userInfo,
   changeProfilePicture,
   updateProfile,
-  userSignup,
-  addInstructorMedia,
-  deleteInstructorMedia,
-  addInstructorLinks,
-  deleteInstructorLinks,
-  changePassword,
   userDelete,
+  changePassword,
   getSecurityQuestion,
   checkSecurityAnswer,
   resetPassword,
-  userInfo,
   getUserClasses,
-  getInstructorClasses,
   getUserBookmarks,
-  getInstructorClassTemplates,
-  getInstructorClassById,
 };

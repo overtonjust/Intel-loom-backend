@@ -26,7 +26,7 @@ classes.get("/", async (req, res) => {
   }
 });
 
-classes.get("/classInfo/:classId", authenticateUser, async (req, res) => {
+classes.get("/class-info/:classId", authenticateUser, async (req, res) => {
   try {
     const { classId } = req.params;
     const classById = await getClassById(classId);
@@ -37,7 +37,7 @@ classes.get("/classInfo/:classId", authenticateUser, async (req, res) => {
 });
 
 classes.get(
-  "/classStudents/:classDateId",
+  "/class-students/:classDateId",
   authenticateUser,
   async (req, res) => {
     try {

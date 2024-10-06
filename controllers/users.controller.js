@@ -2,33 +2,26 @@ const express = require("express");
 const users = express.Router();
 const { upload } = require("../db/s3Config.js");
 const { camelizeKeys, decamelizeKeys } = require("humps");
+const { authenticateUser } = require("../auth/users.auth.js");
+const { validatePassword } = require("../validations/users.validations.js");
 const {
+  itsNewUsername,
+  itsNewEmail,
   userLogin,
+  userSignup,
+  userInfo,
   changeProfilePicture,
   updateProfile,
-  userSignup,
   userDelete,
-  addInstructorMedia,
-  deleteInstructorMedia,
-  addInstructorLinks,
-  deleteInstructorLinks,
   changePassword,
   getSecurityQuestion,
   checkSecurityAnswer,
   resetPassword,
-  userInfo,
   getUserClasses,
-  getInstructorClasses,
-  itsNewUsername,
-  itsNewEmail,
   getUserBookmarks,
-  getInstructorClassTemplates,
-  getInstructorClassById,
 } = require("../queries/users.queries.js");
-const { authenticateUser } = require("../auth/users.auth.js");
-const { validatePassword } = require("../validations/users.validations.js");
 
-users.get("/", (req, res) => res.status(403).send("Unauthorized"));
+users.use(authenticateUser);
 
 users.post("/validate-password", (req, res) => {
   const { password } = req.body;
@@ -98,7 +91,6 @@ users.post(
 
 users.put(
   "/change-profile-picture",
-  authenticateUser,
   upload.single("profilePicture"),
   async (req, res) => {
     try {
@@ -114,7 +106,7 @@ users.put(
   }
 );
 
-users.put("/update-profile", authenticateUser, async (req, res) => {
+users.put("/update-profile", async (req, res) => {
   try {
     const updated_user = await updateProfile(req.session.userId, req.body);
     res.status(200).json(camelizeKeys(updated_user));
@@ -123,52 +115,7 @@ users.put("/update-profile", authenticateUser, async (req, res) => {
   }
 });
 
-users.put(
-  "/add-instructor-media",
-  authenticateUser,
-  upload.array("instructorMedia"),
-  async (req, res) => {
-    try {
-      const instructor_media = req.files;
-      const signed_urls = await addInstructorMedia(
-        req.session.userId,
-        instructor_media
-      );
-      res.status(200).json(signed_urls);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-);
-
-users.delete("/delete-instructor-media", authenticateUser, async (req, res) => {
-  try {
-    await deleteInstructorMedia(req.session.userId, req.body.instructorMedia);
-    res.status(200).json("Media deleted successfully.");
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.put("/add-instructor-links", authenticateUser, async (req, res) => {
-  try {
-    await addInstructorLinks(req.session.userId, req.body.instructorLinks);
-    res.status(200).json(req.body.instructorLinks);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.delete("/delete-instructor-links", authenticateUser, async (req, res) => {
-  try {
-    await deleteInstructorLinks(req.session.userId, req.body.instructorLinks);
-    res.status(200).json("Links deleted successfully.");
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.post("/delete-user", authenticateUser, async (req, res) => {
+users.post("/delete-user", async (req, res) => {
   try {
     const { email, password } = req.body;
     await userDelete(email, password);
@@ -178,7 +125,7 @@ users.post("/delete-user", authenticateUser, async (req, res) => {
   }
 });
 
-users.put("/change-password", authenticateUser, async (req, res) => {
+users.put("/change-password", async (req, res) => {
   try {
     const { email, password, newPassword } = req.body;
     await changePassword(email, password, newPassword);
@@ -250,7 +197,7 @@ users.get("/userClasses", async (req, res) => {
   }
 });
 
-users.get("/userBookmarks", authenticateUser, async (req, res) => {
+users.get("/userBookmarks", async (req, res) => {
   try {
     const { userId } = req.session;
     const bookmarks = await getUserBookmarks(userId);
@@ -260,43 +207,9 @@ users.get("/userBookmarks", authenticateUser, async (req, res) => {
   }
 });
 
-users.get("/instructorClasses", authenticateUser, async (req, res) => {
+users.get("/profile/:userId", async (req, res) => {
   try {
-    const { userId } = req.session;
-    const classes = await getInstructorClasses(userId);
-    res.status(200).json(camelizeKeys(classes));
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-users.get("/instructorClassTemplates", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const classes = await getInstructorClassTemplates(userId);
-    res.status(200).json(camelizeKeys(classes));
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-users.get(
-  "/instructorClassTemplateById/:classId",
-  authenticateUser,
-  async (req, res) => {
-    try {
-      const { classId } = req.params;
-      const classInfo = await getInstructorClassById(classId);
-      res.status(200).json(camelizeKeys(classInfo));
-    } catch (error) {
-      res.status(404).json({ error: error.message });
-    }
-  }
-);
-
-users.get("/profile", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.session;
+    const { userId } = req.params;
     const user = await userInfo(userId);
     res.status(200).json(camelizeKeys(user));
   } catch (error) {
