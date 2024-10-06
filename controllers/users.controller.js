@@ -21,8 +21,6 @@ const {
   getUserBookmarks,
 } = require("../queries/users.queries.js");
 
-users.use(authenticateUser);
-
 users.post("/validate-password", (req, res) => {
   const { password } = req.body;
   const passwordValidation = validatePassword(password);
@@ -91,6 +89,7 @@ users.post(
 
 users.put(
   "/change-profile-picture",
+  authenticateUser,
   upload.single("profilePicture"),
   async (req, res) => {
     try {
@@ -106,7 +105,7 @@ users.put(
   }
 );
 
-users.put("/update-profile", async (req, res) => {
+users.put("/update-profile", authenticateUser, async (req, res) => {
   try {
     const updated_user = await updateProfile(req.session.userId, req.body);
     res.status(200).json(camelizeKeys(updated_user));
@@ -115,7 +114,7 @@ users.put("/update-profile", async (req, res) => {
   }
 });
 
-users.post("/delete-user", async (req, res) => {
+users.post("/delete-user", authenticateUser, async (req, res) => {
   try {
     const { email, password } = req.body;
     await userDelete(email, password);
@@ -125,7 +124,7 @@ users.post("/delete-user", async (req, res) => {
   }
 });
 
-users.put("/change-password", async (req, res) => {
+users.put("/change-password", authenticateUser, async (req, res) => {
   try {
     const { email, password, newPassword } = req.body;
     await changePassword(email, password, newPassword);
@@ -187,7 +186,7 @@ users.get("/check-session", (req, res) => {
   }
 });
 
-users.get("/userClasses", async (req, res) => {
+users.get("/userClasses", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.session;
     const classes = await getUserClasses(userId);
@@ -197,7 +196,7 @@ users.get("/userClasses", async (req, res) => {
   }
 });
 
-users.get("/userBookmarks", async (req, res) => {
+users.get("/userBookmarks", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.session;
     const bookmarks = await getUserBookmarks(userId);
@@ -207,7 +206,7 @@ users.get("/userBookmarks", async (req, res) => {
   }
 });
 
-users.get("/profile/:userId", async (req, res) => {
+users.get("/profile/:userId", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.params;
     const user = await userInfo(userId);
