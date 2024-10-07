@@ -24,14 +24,15 @@ CREATE TABLE users (
   bio TEXT
 );
 
-CREATE TABLE instructor_media (
-  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-  media_key TEXT NOT NULL
-);
-
 CREATE TABLE instructor_links (
   instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   link TEXT NOT NULL
+);
+
+CREATE TABLE instructor_reviews (
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  review TEXT NOT NULL
 );
 
 CREATE TABLE classes (

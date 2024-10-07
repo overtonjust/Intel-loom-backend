@@ -192,18 +192,6 @@ VALUES
 (9, 'class2.jpg'),
 (9, 'class3.jpg');
 
-INSERT INTO instructor_media (instructor_id, media_key)
-VALUES 
-(2, 'video1.mp4'),
-(2, 'video2.mp4'),
-(2, 'video3.mp4'),
-(3, 'video1.mp4'),
-(3, 'video2.mp4'),
-(3, 'video3.mp4'),
-(4, 'video1.mp4'),
-(4, 'video2.mp4'),
-(4, 'video3.mp4');
- 
 INSERT INTO instructor_links (instructor_id, link)
 VALUES 
 (2, 'https://youtu.be/bJzb-RuUcMU'), 
@@ -215,3 +203,18 @@ VALUES
 (4, 'https://youtu.be/bJzb-RuUcMU'),
 (4, 'https://youtu.be/I-k-iTUMQAY'),
 (4, 'https://youtu.be/zOjov-2OZ0E');
+
+INSERT INTO instructor_reviews (instructor_id, user_id, review)
+VALUES
+(2, 1, 'Great instructor! Very knowledgeable and helpful.'),
+(2, 3, 'I enjoyed the class, learned a lot!'),
+(2, 4, 'Very interactive and engaging lessons.'),
+(2, 5, 'Clear explanations and supportive during the class.'),
+(3, 1, 'The instructor was fantastic, I highly recommend!'),
+(3, 2, 'The course material was excellent and well-organized.'),
+(3, 4, 'Great teacher, learned a lot from the class!'),
+(3, 5, 'Superb class, the instructor is very helpful!'),
+(4, 1, 'Very professional and approachable.'),
+(4, 2, 'The class was structured well and easy to follow.'),
+(4, 3, 'Amazing teaching style, would take another class with them.'),
+(4, 5, 'Incredible class, very informative and interactive.');

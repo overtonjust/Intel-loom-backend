@@ -39,7 +39,7 @@ const userLogin = async (email, password) => {
   }
 };
 
-const userSignup = async (user, profile_picture, instructor_media) => {
+const userSignup = async (user, profile_picture) => {
   try {
     const {
       first_name,
@@ -95,43 +95,19 @@ const userSignup = async (user, profile_picture, instructor_media) => {
       ]
     );
     if (instructor_links?.length) {
-      try {
-        await Promise.all(
-          instructor_links.map(async (link) =>
-            db.none(
-              `
+      await Promise.all(
+        instructor_links.map(async (link) =>
+          db.none(
+            `
               INSERT INTO instructor_links
               (instructor_id, link)
               VALUES
               ($1, $2)
               `,
-              [user_id, link]
-            )
+            [user_id, link]
           )
-        );
-      } catch (error) {
-        throw new Error("Problem uploading instructor links");
-      }
-    }
-    if (instructor_media?.length) {
-      try {
-        await Promise.all(
-          instructor_media.map(async (media) => {
-            const media_key = await addToS3(media);
-            return db.none(
-              `
-              INSERT INTO instructor_media
-              (instructor_id, media_key)
-              VALUES
-              ($1, $2)
-              `,
-              [user_id, media_key]
-            );
-          })
-        );
-      } catch (error) {
-        throw new Error("Problem uploading instructor media");
-      }
+        )
+      );
     }
     return user_id;
   } catch (error) {
@@ -155,43 +131,28 @@ const userInfo = async (id) => {
       "SELECT link FROM instructor_links WHERE instructor_id = $1",
       id
     );
-    let instructor_media = await db.any(
-      "SELECT media_key FROM instructor_media WHERE instructor_id = $1",
-      id
-    );
-    instructor_media = await Promise.all(
-      instructor_media.map(
-        async ({ media_key }) => await getSignedUrlFromS3(media_key)
-      )
-    );
-    return { ...user, instructor_links, instructor_media };
+    return { ...user, instructor_links };
   } catch (error) {
     throw error;
   }
 };
 
-const changeProfilePicture = async (user_id, profile_picture) => {
-  try {
-    const user = await db.one(
-      "SELECT profile_picture FROM users WHERE user_id = $1",
-      user_id
-    );
-    if (user.profile_picture) await deleteFromS3(user.profile_picture);
-    const profile_picture_key = await addToS3(profile_picture);
-    await db.none("UPDATE users SET profile_picture = $1 WHERE user_id = $2", [
-      profile_picture_key,
-      user_id,
-    ]);
-    const signed_url = await getSignedUrlFromS3(profile_picture_key);
-    return signed_url;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const updateProfile = async (user_id, user) => {
+const updateProfile = async (user_id, user, new_profile_picture) => {
   try {
     const { bio, github, gitlab, linkedin, youtube } = user;
+    if (new_profile_picture) {
+      const old_profile_picture = await db.one(
+        "SELECT profile_picture FROM users WHERE user_id = $1",
+        user_id
+      );
+      if (old_profile_picture.profile_picture)
+        await deleteFromS3(old_profile_picture.profile_picture);
+      const new_profile_picture_key = await addToS3(new_profile_picture);
+      await db.none(
+        "UPDATE users SET profile_picture = $1 WHERE user_id = $2",
+        [new_profile_picture_key, user_id]
+      );
+    }
     await db.none(
       `
       UPDATE users
@@ -225,13 +186,6 @@ const userDelete = async (email, password) => {
       user.user_id
     );
     if (user.profile_picture) await deleteFromS3(user.profile_picture);
-    if (instructor_media.length) {
-      await Promise.all(
-        instructor_media.map(
-          async ({ media_key }) => await deleteFromS3(media_key)
-        )
-      );
-    }
     if (instructor_classes.length) {
       await Promise.all(
         instructor_classes.map(async ({ class_id, highlight_picture }) => {
@@ -430,7 +384,6 @@ module.exports = {
   userLogin,
   userSignup,
   userInfo,
-  changeProfilePicture,
   updateProfile,
   userDelete,
   changePassword,

@@ -10,7 +10,6 @@ const {
   userLogin,
   userSignup,
   userInfo,
-  changeProfilePicture,
   updateProfile,
   userDelete,
   changePassword,
@@ -63,20 +62,15 @@ users.post("/login", async (req, res) => {
 
 users.post(
   "/register",
-  upload.fields([
-    { name: "profilePicture", maxCount: 1 },
-    { name: "instructorMedia" },
-  ]),
+  upload.single("profilePicture"),
   async (req, res) => {
     try {
       const profile_picture = req.files.profilePicture
         ? req.files.profilePicture[0]
         : null;
-      const instructor_media = req.files.instructorMedia || [];
       const user_id = await userSignup(
         decamelizeKeys(req.body),
         profile_picture,
-        instructor_media
       );
       req.session.userId = user_id;
       req.session.loggedIn = true;
@@ -87,27 +81,10 @@ users.post(
   }
 );
 
-users.put(
-  "/change-profile-picture",
-  authenticateUser,
-  upload.single("profilePicture"),
-  async (req, res) => {
-    try {
-      const profile_picture = req.file;
-      const signed_url = await changeProfilePicture(
-        req.session.userId,
-        profile_picture
-      );
-      res.status(200).json(signed_url);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-);
-
-users.put("/update-profile", authenticateUser, async (req, res) => {
+users.put("/update-profile", authenticateUser, upload.single('profilePicture'), async (req, res) => {
   try {
-    const updated_user = await updateProfile(req.session.userId, req.body);
+    const profile_picture = req.file.profilePicture ? req.file.profilePicture[0] : null;
+    const updated_user = await updateProfile(req.session.userId, req.body, profile_picture);
     res.status(200).json(camelizeKeys(updated_user));
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,56 +1,8 @@
 const db = require("../db/dbConfig.js");
 const {
   getSignedUrlFromS3,
-  deleteFromS3,
-  addToS3,
 } = require("../aws/s3.commands.js");
 const { format_date } = require("../utils.js");
-
-const addInstructorMedia = async (instructor_id, instructor_media) => {
-  try {
-    const media_keys = await Promise.all(
-      instructor_media.map(async (media) => {
-        const media_key = await addToS3(media);
-        await db.none(
-          `
-          INSERT INTO instructor_media
-          (instructor_id, media_key)
-          VALUES
-          ($1, $2)
-          `,
-          [instructor_id, media_key]
-        );
-        return media_key;
-      })
-    );
-    const signed_urls = await Promise.all(
-      media_keys.map(async (media_key) => await getSignedUrlFromS3(media_key))
-    );
-    return signed_urls;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const deleteInstructorMedia = async (instructor_id, instructor_media) => {
-  try {
-    await Promise.all(
-      instructor_media.map(async (media_key) => {
-        await deleteFromS3(media_key);
-        await db.none(
-          `
-          DELETE FROM instructor_media
-          WHERE instructor_id = $1
-          AND media_key = $2
-          `,
-          [instructor_id, media_key]
-        );
-      })
-    );
-  } catch (error) {
-    throw error;
-  }
-};
 
 const addInstructorLinks = async (instructor_id, instructor_links) => {
   try {
@@ -213,8 +165,6 @@ const getInstructorClassTemplateById = async (id) => {
 };
 
 module.exports = {
-  addInstructorMedia,
-  deleteInstructorMedia,
   addInstructorLinks,
   deleteInstructorLinks,
   getInstructorClasses,
