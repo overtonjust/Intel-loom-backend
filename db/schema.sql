@@ -35,6 +35,12 @@ CREATE TABLE instructor_reviews (
   review TEXT NOT NULL
 );
 
+CREATE TABLE instructor_ratings (
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5)
+);
+
 CREATE TABLE classes (
   class_id SERIAL PRIMARY KEY,
   instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,

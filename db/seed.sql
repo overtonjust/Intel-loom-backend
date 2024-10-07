@@ -218,3 +218,18 @@ VALUES
 (4, 2, 'The class was structured well and easy to follow.'),
 (4, 3, 'Amazing teaching style, would take another class with them.'),
 (4, 5, 'Incredible class, very informative and interactive.');
+
+INSERT INTO instructor_ratings (instructor_id, user_id, rating)
+VALUES
+(2, 1, 5),
+(2, 3, 4),
+(2, 4, 5),
+(2, 5, 4),
+(3, 1, 5),
+(3, 2, 4),
+(3, 4, 5),
+(3, 5, 4),
+(4, 1, 5),
+(4, 2, 4),
+(4, 3, 5),
+(4, 5, 4);
