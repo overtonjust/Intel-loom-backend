@@ -177,10 +177,6 @@ const userDelete = async (email, password) => {
     if (!user) throw new Error("Invalid Credentials");
     const passwordMatched = await bcrypt.compare(password, user.password);
     if (!passwordMatched) throw new Error("Invalid Credentials");
-    const instructor_media = await db.any(
-      "SELECT media_key FROM instructor_media WHERE instructor_id = $1",
-      user.user_id
-    );
     const instructor_classes = await db.any(
       "SELECT class_id, highlight_picture FROM classes WHERE instructor_id = $1",
       user.user_id
@@ -288,6 +284,7 @@ const getUserClasses = async (id) => {
     const class_map = new Map();
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
+        const check_bookedmarked = await db.oneOrNone('SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2', [id, classInfo.class_id]);
         if (!class_map.has(classInfo.class_id)) {
           const signed_url = await getSignedUrlFromS3(
             classInfo.highlight_picture
@@ -303,6 +300,7 @@ const getUserClasses = async (id) => {
             title: classInfo.title,
             highlight_picture: signed_url,
             price: classInfo.price,
+            is_bookmarked: check_bookedmarked ? true : false,
           });
         }
       })
@@ -365,6 +363,7 @@ const getUserBookmarks = async (id) => {
             title: classInfo.title,
             highlight_picture: signed_url,
             price: classInfo.price,
+            is_bookmarked: true,
           });
         }
       })
@@ -373,6 +372,37 @@ const getUserBookmarks = async (id) => {
       ...bookmark_map.get(classInfo.class_id),
     }));
     return formatted_bookmark_info;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const addBookmark = async (user_id, class_id) => {
+  try {
+    await db.none(
+      `
+      INSERT INTO bookmarked_classes
+      (user_id, class_id)
+      VALUES
+      ($1, $2)
+      `,
+      [user_id, class_id]
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+const removeBookmark = async (user_id, class_id) => {
+  try {
+    await db.none(
+      `
+      DELETE FROM bookmarked_classes
+      WHERE user_id = $1
+      AND class_id = $2
+      `,
+      [user_id, class_id]
+    );
   } catch (error) {
     throw error;
   }
@@ -392,4 +422,6 @@ module.exports = {
   resetPassword,
   getUserClasses,
   getUserBookmarks,
+  addBookmark,
+  removeBookmark,
 };

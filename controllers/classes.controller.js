@@ -11,6 +11,8 @@ const {
   updateClassTemplate,
   updateClassPictures,
   addClassDate,
+  editClassDate,
+  deleteClassDate,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 
@@ -18,8 +20,9 @@ const { addToS3, getSignedUrlFromS3 } = require("../aws/s3.commands.js");
 
 classes.get("/", async (req, res) => {
   try {
+    const { userId } = req.session;
     const { page } = req.query;
-    const set = await getAllClasses(page);
+    const set = await getAllClasses(page, userId);
     res.status(200).json(camelizeKeys(set));
   } catch (error) {
     res.status(404).json({ error: error.message });
@@ -28,8 +31,9 @@ classes.get("/", async (req, res) => {
 
 classes.get("/class-info/:classId", authenticateUser, async (req, res) => {
   try {
+    const { userId } = req.session;
     const { classId } = req.params;
-    const classById = await getClassById(classId);
+    const classById = await getClassById(classId, userId);
     res.status(200).json(camelizeKeys(classById));
   } catch (error) {
     res.status(404).json({ error: error.message });
@@ -140,6 +144,26 @@ classes.post(
     }
   }
 );
+
+classes.put('/edit-class-date/:classDateId', authenticateUser, async (req, res) => {
+  try {
+    const { classDateId } = req.params;
+    const updated_date = await editClassDate(classDateId, decamelizeKeys(req.body));
+    res.status(200).json(camelizeKeys(updated_date));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+classes.delete('/delete-class-date/:classDateId', authenticateUser, async (req, res) => {
+  try {
+    const { classDateId } = req.params;
+    await deleteClassDate(classDateId);
+    res.status(200).json('Class date deleted successfully.');
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
 
 classes.post(
   "/class-recording",

@@ -5,7 +5,7 @@ const {
   addToS3,
 } = require("../aws/s3.commands.js");
 
-const getAllClasses = async (page = 1) => {
+const getAllClasses = async (page = 1, user_id) => {
   try {
     const offset = (page - 1) * 20;
     const classes_info_bulk = await db.any(
@@ -26,6 +26,7 @@ const getAllClasses = async (page = 1) => {
     if (!classes_info_bulk) return { classes: [], more_classes: false };
     const formatted_class_info = await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
+        const check_bookedmarked = await db.oneOrNone('SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2', [user_id, classInfo.class_id]);
         const signed_url = await getSignedUrlFromS3(
           classInfo.highlight_picture
         );
@@ -34,6 +35,7 @@ const getAllClasses = async (page = 1) => {
           title: classInfo.title,
           price: classInfo.price,
           highlight_picture: signed_url,
+          is_bookmarked: check_bookedmarked ? true : false,
           instructor: {
             instructor_id: classInfo.instructor_id,
             first_name: classInfo.first_name,
@@ -49,7 +51,7 @@ const getAllClasses = async (page = 1) => {
   }
 };
 
-const getClassById = async (id) => {
+const getClassById = async (id, user_id) => {
   try {
     const class_info_bulk = await db.oneOrNone(
       `
@@ -60,6 +62,7 @@ const getClassById = async (id) => {
       `,
       id
     );
+    const check_bookmarked = await db.oneOrNone('SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2', [user_id, id]);
     const class_dates = await db.any(
       `
       SELECT class_dates.*
@@ -91,6 +94,8 @@ const getClassById = async (id) => {
     if (more_classes_from_instructor.length) {
       await Promise.all(
         more_classes_from_instructor.map(async (classInfo) => {
+          const check_bookmarked = await db.oneOrNone('SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2', [user_id, classInfo.class_id]);
+          classInfo.is_bookmarked = check_bookmarked ? true : false;
           classInfo.highlight_picture = await getSignedUrlFromS3(
             classInfo.highlight_picture
           );
@@ -116,6 +121,7 @@ const getClassById = async (id) => {
       title: class_info_bulk.title,
       price: class_info_bulk.price,
       highlight_picture: highlight_picture_signed_url,
+      is_bookmarked: check_bookmarked ? true : false,
       instructor: {
         instructor_id: class_info_bulk.instructor_id,
         first_name: class_info_bulk.first_name,
@@ -320,6 +326,34 @@ const addClassDate = async (class_id, class_dates) => {
   }
 }
 
+const editClassDate = async (class_date_id, class_dates) => {
+  try {
+    const { class_start, class_end } = class_dates;
+    const updated_date = await db.one(
+      `
+      UPDATE class_dates SET class_start = $1, class_end = $2
+      WHERE class_date_id = $3 RETURNING *
+      `, [class_start, class_end, class_date_id]
+    );
+    return updated_date;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const deleteClassDate = async (class_date_id) => {
+  try {
+    await db.none(
+      `
+      DELETE FROM class_dates
+      WHERE class_date_id = $1
+      `, class_date_id
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   getAllClasses,
   getClassById,
@@ -329,4 +363,6 @@ module.exports = {
   updateClassTemplate,
   updateClassPictures,
   addClassDate,
+  editClassDate,
+  deleteClassDate,
 };
