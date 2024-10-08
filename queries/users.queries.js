@@ -181,6 +181,14 @@ const userDelete = async (email, password) => {
       "SELECT class_id, highlight_picture FROM classes WHERE instructor_id = $1",
       user.user_id
     );
+    const instructor_recordings = await db.any(
+      `
+      SELECT class_recordings.recording_key
+      FROM instructor_class_recordings
+      JOIN class_recordings ON instructor_class_recordings.class_recording_id = class_recordings.class_recording_id
+      WHERE instructor_class_recordings.instructor_id = $1
+      `, user.user_id
+    );
     if (user.profile_picture) await deleteFromS3(user.profile_picture);
     if (instructor_classes.length) {
       await Promise.all(
@@ -197,6 +205,13 @@ const userDelete = async (email, password) => {
               )
             );
         })
+      );
+    }
+    if (instructor_recordings.length) {
+      await Promise.all(
+        instructor_recordings.map(
+          async ({ recording_key }) => await deleteFromS3(recording_key)
+        )
       );
     }
     await db.none("DELETE FROM users WHERE email = $1", email);
