@@ -1,6 +1,5 @@
 const express = require("express");
 const instructors = express.Router();
-const { upload } = require("../db/s3Config.js");
 const { camelizeKeys } = require("humps");
 const { authenticateUser } = require("../auth/users.auth.js");
 const {
@@ -68,7 +67,7 @@ instructors.get(
 instructors.get("/instructor-class-recordings", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.session;
-    const recordings = await userClassRecordings(userId);
+    const recordings = await instructorClassRecordings(userId);
     res.status(200).json(camelizeKeys(recordings));
   } catch (error) {
     res.status(404).json({ error: error.message });
