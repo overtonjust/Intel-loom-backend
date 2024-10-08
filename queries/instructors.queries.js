@@ -53,7 +53,7 @@ const getInstructorClasses = async (id) => {
       FROM classes
       JOIN class_dates ON classes.class_id = class_dates.class_id
       WHERE classes.instructor_id = $1
-      AND class_dates.class_start >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
+      AND class_dates.class_start >= NOW()
       `,
       id
     );
@@ -128,7 +128,7 @@ const getInstructorClassTemplateById = async (id) => {
       SELECT class_dates.*
       FROM class_dates
       WHERE class_dates.class_id = $1
-      AND class_dates.class_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York' >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
+      AND class_dates.class_start >= NOW()
       ORDER BY class_dates.class_start
       `,
       id
@@ -194,4 +194,5 @@ module.exports = {
   getInstructorClasses,
   getInstructorClassTemplates,
   getInstructorClassTemplateById,
+  instructorClassRecordings,
 };

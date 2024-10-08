@@ -516,7 +516,28 @@ const becomeInstructorCheck = async (id) => {
 
 const finishInstructorSignup = async (id, user, new_profile_picture) => {
   try {
-    const { bio, linkedin }
+    const { bio, linkedin } = user;
+    if (new_profile_picture) {
+      const old_profile_picture = await db.one(
+        "SELECT profile_picture FROM users WHERE user_id = $1",
+        id
+      );
+      if (old_profile_picture.profile_picture)
+        await deleteFromS3(old_profile_picture.profile_picture);
+      const new_profile_picture_key = await addToS3(new_profile_picture);
+      await db.none(
+        "UPDATE users SET profile_picture = $1 WHERE user_id = $2",
+        [new_profile_picture_key, id]
+      );
+    }
+    await db.none(
+      `
+      UPDATE users
+      SET bio = $1, linkedin = $2
+      WHERE user_id = $3
+      `, [bio, linkedin, id]
+    );
+    return await userInfo(id);
   } catch (error) {
     throw error;
   }
@@ -543,4 +564,5 @@ module.exports = {
   cancelBooking,
   addInstructorReview,
   becomeInstructorCheck,
+  finishInstructorSignup,
 };
