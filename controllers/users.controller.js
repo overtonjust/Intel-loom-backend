@@ -280,7 +280,7 @@ users.post("/finish-instructor-signup", authenticateUser, upload.single('profile
   try {
     const { userId } = req.session;
     const profile_picture = req.file.profilePicture ? req.file.profilePicture[0] : null;
-    const user = await finishInstructorSignup(userId, req.body, profile_picture);
+    const user = await finishInstructorSignup(userId, decamelizeKeys(req.body), profile_picture);
     res.status(200).json(camelizeKeys(user));
   } catch (error) {
     res.status(500).json({ error: error.message });

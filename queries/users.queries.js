@@ -516,7 +516,7 @@ const becomeInstructorCheck = async (id) => {
 
 const finishInstructorSignup = async (id, user, new_profile_picture) => {
   try {
-    const { bio, linkedin } = user;
+    const { bio, linkedin, instructor_links } = user;
     if (new_profile_picture) {
       const old_profile_picture = await db.one(
         "SELECT profile_picture FROM users WHERE user_id = $1",
@@ -528,6 +528,21 @@ const finishInstructorSignup = async (id, user, new_profile_picture) => {
       await db.none(
         "UPDATE users SET profile_picture = $1 WHERE user_id = $2",
         [new_profile_picture_key, id]
+      );
+    }
+    if (instructor_links?.length) {
+      await Promise.all(
+        instructor_links.map(async (link) =>
+          db.none(
+            `
+              INSERT INTO instructor_links
+              (instructor_id, link)
+              VALUES
+              ($1, $2)
+              `,
+            [id, link]
+          )
+        )
       );
     }
     await db.none(
