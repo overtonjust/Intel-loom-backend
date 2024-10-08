@@ -498,6 +498,30 @@ const addInstructorReview = async (user_id, instructor_id, review, rating) => {
   }
 };
 
+const becomeInstructorCheck = async (id) => {
+  try {
+    const user = await db.one(
+      `
+      SELECT profile_picture, bio, linkedin
+      FROM users
+      WHERE user_id = $1
+      `, id
+    );
+    if (user.profile_picture) user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const finishInstructorSignup = async (id, user, new_profile_picture) => {
+  try {
+    const { bio, linkedin }
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   itsNewUsername,
   itsNewEmail,
@@ -518,4 +542,5 @@ module.exports = {
   bookClass,
   cancelBooking,
   addInstructorReview,
+  becomeInstructorCheck,
 };

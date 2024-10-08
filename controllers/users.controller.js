@@ -24,6 +24,8 @@ const {
   bookClass,
   cancelBooking,
   addInstructorReview,
+  becomeInstructorCheck,
+  finishInstructorSignup,
 } = require("../queries/users.queries.js");
 
 users.post("/validate-password", (req, res) => {
@@ -259,6 +261,27 @@ users.post("/add-instructor-review", authenticateUser, async (req, res) => {
     const { instructorId, review, rating } = req.body;
     await addInstructorReview(userId, instructorId, review, rating);
     res.status(200).json("Review added successfully.");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+users.get("/become-instructor-check", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const user = await becomeInstructorCheck(userId);
+    res.status(200).json(camelizeKeys(user));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+users.post("/finish-instructor-signup", authenticateUser, upload.single('profilePicture'), async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const profile_picture = req.file.profilePicture ? req.file.profilePicture[0] : null;
+    const user = await finishInstructorSignup(userId, req.body, profile_picture);
+    res.status(200).json(camelizeKeys(user));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
