@@ -21,6 +21,8 @@ const {
   addBookmark,
   removeBookmark,
   userClassRecordings,
+  bookClass,
+  cancelBooking,
 } = require("../queries/users.queries.js");
 
 users.post("/validate-password", (req, res) => {
@@ -223,6 +225,28 @@ users.post("/remove-bookmark", authenticateUser, async (req, res) => {
     const { classId } = req.body;
     await removeBookmark(userId, classId);
     res.status(200).json("Bookmark removed successfully.");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+users.post("/book-class", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const { classDateId } = req.body;
+    await bookClass(userId, classDateId);
+    res.status(200).json("Class booked successfully.");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+users.post("/cancel-booking", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const { classDateId } = req.body;
+    await cancelBooking(userId, classDateId);
+    res.status(200).json("Booking cancelled successfully.");
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

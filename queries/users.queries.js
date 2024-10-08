@@ -458,6 +458,9 @@ const userClassRecordings = async (id) => {
   }
 };
 
+const bookClass = async (user_id, class_date_id) => {
+};
+
 module.exports = {
   itsNewUsername,
   itsNewEmail,
