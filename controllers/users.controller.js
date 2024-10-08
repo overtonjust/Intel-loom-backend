@@ -20,6 +20,7 @@ const {
   getUserBookmarks,
   addBookmark,
   removeBookmark,
+  userClassRecordings,
 } = require("../queries/users.queries.js");
 
 users.post("/validate-password", (req, res) => {
@@ -165,7 +166,7 @@ users.get("/check-session", (req, res) => {
   }
 });
 
-users.get("/userClasses", authenticateUser, async (req, res) => {
+users.get("/user-classes", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.session;
     const classes = await getUserClasses(userId);
@@ -175,11 +176,21 @@ users.get("/userClasses", authenticateUser, async (req, res) => {
   }
 });
 
-users.get("/userBookmarks", authenticateUser, async (req, res) => {
+users.get("/user-bookmarks", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.session;
     const bookmarks = await getUserBookmarks(userId);
     res.status(200).json(camelizeKeys(bookmarks));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+users.get("/user-class-recordings", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const recordings = await userClassRecordings(userId);
+    res.status(200).json(camelizeKeys(recordings));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }

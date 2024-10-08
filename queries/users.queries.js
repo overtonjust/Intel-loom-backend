@@ -4,7 +4,7 @@ const {
   deleteFromS3,
   addToS3,
 } = require("../aws/s3.commands.js");
-const { format_date } = require("../utils.js");
+const { format_date, format_recording_date } = require("../utils.js");
 const bcrypt = require("bcrypt");
 
 const itsNewUsername = async (username) => {
@@ -78,7 +78,7 @@ const userSignup = async (user, profile_picture) => {
       [
         first_name,
         middle_name,
-        last_name,
+ last_name,
         username,
         birth_date,
         email,
@@ -408,6 +408,30 @@ const removeBookmark = async (user_id, class_id) => {
   }
 };
 
+const userClassRecordings = async (id) => {
+  try {
+    const recordings = await db.any(
+      `
+      SELECT class_recordings.recording_key, class_dates.class_start, classes.title
+      FROM user_class_recordings
+      JOIN class_recordings ON user_class_recordings.class_recording_id = class_recordings.class_recording_id
+      JOIN class_dates ON class_recordings.class_date_id = class_dates.class_date_id
+      JOIN classes ON class_dates.class_id = classes.class_id
+      WHERE user_class_recordings.user_id = $1
+      `, id
+    );
+    if (!recordings.length) return [];
+    const formatted_recordings = recordings.map((recording) => ({
+      class_start: format_recording_date(recording.class_start),
+      title: recording.title,
+      recording_key: recording.recording_key,
+    }));
+    return formatted_recordings;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   itsNewUsername,
   itsNewEmail,
@@ -424,4 +448,5 @@ module.exports = {
   getUserBookmarks,
   addBookmark,
   removeBookmark,
+  userClassRecordings,
 };

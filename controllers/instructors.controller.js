@@ -9,6 +9,7 @@ const {
   getInstructorClasses,
   getInstructorClassTemplates,
   getInstructorClassById,
+  instructorClassRecordings,
 } = require("../queries/instructors.queries.js");
 
 instructors.use(authenticateUser);
@@ -63,5 +64,16 @@ instructors.get(
     }
   }
 );
+
+instructors.get("/instructor-class-recordings", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const recordings = await userClassRecordings(userId);
+    res.status(200).json(camelizeKeys(recordings));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
 
 module.exports = instructors;

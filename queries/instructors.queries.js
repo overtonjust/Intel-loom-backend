@@ -164,6 +164,30 @@ const getInstructorClassTemplateById = async (id) => {
   }
 };
 
+const instructorClassRecordings = async (id) => {
+  try {
+    const recordings = await db.any(
+      `
+      SELECT class_recordings.recording_key, class_dates.class_start, classes.title
+      FROM instructor_class_recordings
+      JOIN class_recordings ON instructor_class_recordings.class_recording_id = class_recordings.class_recording_id
+      JOIN class_dates ON class_recordings.class_date_id = class_dates.class_date_id
+      JOIN classes ON class_dates.class_id = classes.class_id
+      WHERE instructor_class_recordings.instructor_id = $1
+      `, id
+    );
+    if (!recordings.length) return [];
+    const formatted_recordings = recordings.map((recording) => ({
+      class_start: format_recording_date(recording.class_start),
+      title: recording.title,
+      recording_key: recording.recording_key,
+    }));
+    return formatted_recordings;
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   addInstructorLinks,
   deleteInstructorLinks,
