@@ -131,7 +131,18 @@ const userInfo = async (id) => {
       "SELECT link FROM instructor_links WHERE instructor_id = $1",
       id
     );
-    return { ...user, instructor_links };
+    const instructor_reviews = await db.any(
+      `
+      SELECT instructor_reviews.review, users.first_name, users.last_name
+      FROM instructor_reviews
+      JOIN users ON instructor_reviews.user_id = users.user_id
+      WHERE instructor_reviews.instructor_id = $1
+      `, id
+    );
+    const instructor_total_ratings = await db.any('SELECT rating FROM instructor_ratings WHERE instructor_id = $1', id);
+    const average_rating = (instructor_total_ratings.reduce((acc, {rating}) => acc + rating, 0) / instructor_total_ratings.length).toFixed(2);
+    user.rating = Number(average_rating) > 0 ? average_rating : null;
+    return { ...user, instructor_links, instructor_reviews };
   } catch (error) {
     throw error;
   }
@@ -291,7 +302,7 @@ const getUserClasses = async (id) => {
       JOIN classes ON class_dates.class_id = classes.class_id
       JOIN users ON classes.instructor_id = users.user_id
       WHERE booked_classes.user_id = $1
-      AND class_dates.class_start >= NOW() AT TIME ZONE 'UTC' AT TIME ZONE 'America/New_York'
+      AND class_dates.class_start >= NOW()
       `,
       id
     );
