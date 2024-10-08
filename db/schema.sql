@@ -56,7 +56,8 @@ CREATE TABLE class_dates (
   class_date_id SERIAL PRIMARY KEY,
   class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
   class_start TIMESTAMP NOT NULL,
-  class_end TIMESTAMP NOT NULL
+  class_end TIMESTAMP NOT NULL,
+  students INTEGER DEFAULT 0
 );
 
 CREATE TABLE class_pictures (

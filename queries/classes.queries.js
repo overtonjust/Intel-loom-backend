@@ -14,7 +14,8 @@ const getAllClasses = async (page = 1, user_id) => {
       FROM classes
       JOIN users ON classes.instructor_id = users.user_id
       JOIN class_dates ON classes.class_id = class_dates.class_id
-      WHERE class_dates.class_start >= NOW()
+      WHERE class_dates.class_start >= (NOW() + INTERVAL '1 hour')
+      AND class_dates.students < classes.capacity
       GROUP BY classes.class_id, users.user_id
       ORDER BY classes.class_id
       LIMIT 21 OFFSET $1
@@ -73,8 +74,10 @@ const getClassById = async (id, user_id) => {
       `
       SELECT class_dates.*
       FROM class_dates
+      JOIN classes ON class_dates.class_id = classes.class_id
       WHERE class_dates.class_id = $1
-      AND class_dates.class_start >= NOW()
+      AND class_dates.class_start >= (NOW() + INTERVAL '1 hour')
+      AND class_dates.students < classes.capacity
       ORDER BY class_dates.class_start
       `,
       id
