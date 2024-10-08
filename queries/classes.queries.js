@@ -26,7 +26,10 @@ const getAllClasses = async (page = 1, user_id) => {
     if (!classes_info_bulk) return { classes: [], more_classes: false };
     const formatted_class_info = await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
-        const check_bookedmarked = await db.oneOrNone('SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2', [user_id, classInfo.class_id]);
+        const check_bookedmarked = await db.oneOrNone(
+          "SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2",
+          [user_id, classInfo.class_id]
+        );
         const signed_url = await getSignedUrlFromS3(
           classInfo.highlight_picture
         );
@@ -62,7 +65,10 @@ const getClassById = async (id, user_id) => {
       `,
       id
     );
-    const check_bookmarked = await db.oneOrNone('SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2', [user_id, id]);
+    const check_bookmarked = await db.oneOrNone(
+      "SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2",
+      [user_id, id]
+    );
     const class_dates = await db.any(
       `
       SELECT class_dates.*
@@ -94,7 +100,10 @@ const getClassById = async (id, user_id) => {
     if (more_classes_from_instructor.length) {
       await Promise.all(
         more_classes_from_instructor.map(async (classInfo) => {
-          const check_bookmarked = await db.oneOrNone('SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2', [user_id, classInfo.class_id]);
+          const check_bookmarked = await db.oneOrNone(
+            "SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2",
+            [user_id, classInfo.class_id]
+          );
           classInfo.is_bookmarked = check_bookmarked ? true : false;
           classInfo.highlight_picture = await getSignedUrlFromS3(
             classInfo.highlight_picture
@@ -324,7 +333,7 @@ const addClassDate = async (class_id, class_dates) => {
   } catch (error) {
     throw error;
   }
-}
+};
 
 const editClassDate = async (class_date_id, class_dates) => {
   try {
@@ -333,7 +342,8 @@ const editClassDate = async (class_date_id, class_dates) => {
       `
       UPDATE class_dates SET class_start = $1, class_end = $2
       WHERE class_date_id = $3 RETURNING *
-      `, [class_start, class_end, class_date_id]
+      `,
+      [class_start, class_end, class_date_id]
     );
     return updated_date;
   } catch (error) {
@@ -347,7 +357,34 @@ const deleteClassDate = async (class_date_id) => {
       `
       DELETE FROM class_dates
       WHERE class_date_id = $1
-      `, class_date_id
+      `,
+      class_date_id
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+const addClassRecording = async (class_date_id, recording, instructor_id) => {
+  try {
+    const recording_key = await addToS3(recording);
+    const { class_recording_id } = await db.one(
+      "INSERT INTO class_recordings (class_date_id, recording_key) VALUES ($1, $2) RETURNING class_recording_id",
+      [class_date_id, recording_key]
+    );
+    const class_students = await getClassStudents(class_date_id);
+    await Promise.all(
+      class_students.map(
+        async ({ user_id }) =>
+          await db.none(
+            "INSERT INTO user_class_recordings (user_id, class_recording_id) VALUES ($1, $2)",
+            [user_id, class_recording_id]
+          )
+      )
+    );
+    await db.none(
+      "INSERT INTO instructor_class_recordings (class_recording_id, instructor_id) VALUES ($1, $2)",
+      [class_recording_id, instructor_id]
     );
   } catch (error) {
     throw error;
@@ -365,4 +402,5 @@ module.exports = {
   addClassDate,
   editClassDate,
   deleteClassDate,
+  addClassRecording,
 };

@@ -13,10 +13,9 @@ const {
   addClassDate,
   editClassDate,
   deleteClassDate,
+  addClassRecording,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
-
-const { addToS3, getSignedUrlFromS3 } = require("../aws/s3.commands.js");
 
 classes.get("/", async (req, res) => {
   try {
@@ -166,16 +165,16 @@ classes.delete('/delete-class-date/:classDateId', authenticateUser, async (req, 
 });
 
 classes.post(
-  "/class-recording",
+  "/class-recording/:classDateId",
   authenticateUser,
   upload.single("recording"),
   async (req, res) => {
     try {
-      const key = await addToS3(req.file);
-      const signedUrl = await getSignedUrlFromS3(key);
-      res.status(200).json(signedUrl);
+      const { classDateId } = req.params;
+      const { userId } = req.session;
+      const recording = req.file.recording ? req.file.recording[0] : null;
+      await addClassRecording(classDateId, recording, userId);
     } catch (error) {
-      console.log(error);
       res.status(404).json({ error: error.message });
     }
   }

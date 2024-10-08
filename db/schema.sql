@@ -64,6 +64,22 @@ CREATE TABLE class_pictures (
   picture_key TEXT NOT NULL
 );
 
+CREATE TABLE class_recordings (
+  class_recording_id SERIAL PRIMARY KEY,
+  class_date_id INTEGER REFERENCES class_dates(class_date_id) ON DELETE CASCADE,
+  recording_key TEXT NOT NULL
+);
+
+CREATE TABLE user_class_recordings (
+  class_recording_id INTEGER REFERENCES class_recordings(class_recording_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE instructor_class_recordings (
+  class_recording_id INTEGER REFERENCES class_recordings(class_recording_id) ON DELETE CASCADE,
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
+);
+
 CREATE TABLE booked_classes (
   class_date_id INTEGER REFERENCES class_dates(class_date_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
