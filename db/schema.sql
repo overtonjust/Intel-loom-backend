@@ -37,7 +37,6 @@ CREATE TABLE instructor_reviews (
 
 CREATE TABLE instructor_ratings (
   instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5)
 );
 

@@ -23,6 +23,7 @@ const {
   userClassRecordings,
   bookClass,
   cancelBooking,
+  addInstructorReview,
 } = require("../queries/users.queries.js");
 
 users.post("/validate-password", (req, res) => {
@@ -247,6 +248,17 @@ users.post("/cancel-booking", authenticateUser, async (req, res) => {
     const { classDateId } = req.body;
     await cancelBooking(userId, classDateId);
     res.status(200).json("Booking cancelled successfully.");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+users.post("/add-instructor-review", authenticateUser, async (req, res) => {
+  try {
+    const { userId } = req.session;
+    const { instructorId, review, rating } = req.body;
+    await addInstructorReview(userId, instructorId, review, rating);
+    res.status(200).json("Review added successfully.");
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -459,6 +459,43 @@ const userClassRecordings = async (id) => {
 };
 
 const bookClass = async (user_id, class_date_id) => {
+  try {
+    await db.none(
+      `
+      INSERT INTO booked_classes
+      (user_id, class_date_id)
+      VALUES
+      ($1, $2)
+      `,
+      [user_id, class_date_id]
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+const cancelBooking = async (user_id, class_date_id) => {
+  try {
+    await db.none(
+      `
+      DELETE FROM booked_classes
+      WHERE user_id = $1
+      AND class_date_id = $2
+      `,
+      [user_id, class_date_id]
+    );
+  } catch (error) {
+    throw error;
+  }
+};
+
+const addInstructorReview = async (user_id, instructor_id, review, rating) => {
+  try {
+    await db.none('INSERT INTO instructor_reviews (user_id, instructor_id, review) VALUES ($1, $2, $3)', [user_id, instructor_id, review]);
+    await db.none('INSERT INTO instructor_ratings (instructor_id, rating) VALUES ($1, $2)', [instructor_id, rating]);
+  } catch (error) {
+    throw error;
+  }
 };
 
 module.exports = {
@@ -478,4 +515,7 @@ module.exports = {
   addBookmark,
   removeBookmark,
   userClassRecordings,
+  bookClass,
+  cancelBooking,
+  addInstructorReview,
 };
