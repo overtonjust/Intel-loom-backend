@@ -22,9 +22,9 @@ instructors.post("/add-instructor-links", async (req, res) => {
   }
 });
 
-instructors.delete("/delete-instructor-links", async (req, res) => {
+instructors.post("/delete-instructor-links", async (req, res) => {
   try {
-    await deleteInstructorLinks(req.session.userId, req.body.instructorLinks);
+    await deleteInstructorLinks(req.session.userId, req.body.removeLinks);
     res.status(200).json("Links deleted successfully.");
   } catch (error) {
     res.status(500).json({ error: error.message });

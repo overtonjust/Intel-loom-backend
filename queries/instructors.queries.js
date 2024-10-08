@@ -25,10 +25,10 @@ const addInstructorLinks = async (instructor_id, instructor_links) => {
   }
 };
 
-const deleteInstructorLinks = async (instructor_id, instructor_links) => {
+const deleteInstructorLinks = async (instructor_id, remove_links) => {
   try {
     await Promise.all(
-      instructor_links.map(
+      remove_links.map(
         async (link) =>
           await db.none(
             `
