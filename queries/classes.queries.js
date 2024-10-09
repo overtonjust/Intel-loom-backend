@@ -28,7 +28,7 @@ const getAllClasses = async (page = 1, user_id) => {
     const formatted_class_info = await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
         const check_bookedmarked = await db.oneOrNone(
-          "SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2",
+          "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
           [user_id, classInfo.class_id]
         );
         const signed_url = await getSignedUrlFromS3(
@@ -67,7 +67,7 @@ const getClassById = async (id, user_id) => {
       id
     );
     const check_bookmarked = await db.oneOrNone(
-      "SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2",
+      "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
       [user_id, id]
     );
     const class_dates = await db.any(
@@ -104,7 +104,7 @@ const getClassById = async (id, user_id) => {
       await Promise.all(
         more_classes_from_instructor.map(async (classInfo) => {
           const check_bookmarked = await db.oneOrNone(
-            "SELECT * FROM bookmarks WHERE user_id = $1 AND class_id = $2",
+            "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
             [user_id, classInfo.class_id]
           );
           classInfo.is_bookmarked = check_bookmarked ? true : false;
