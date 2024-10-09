@@ -1,81 +1,183 @@
-const { upload } = require('../db/s3Config.js');
+const { upload } = require("../db/s3Config.js");
 const express = require("express");
 const classes = express.Router();
-const { camelizeKeys } = require("humps");
+const { camelizeKeys, decamelizeKeys } = require("humps");
 const {
   getAllClasses,
   getClassById,
   getClassStudents,
-  getUserClasses,
-  getInstructorClasses,
+  createClassTemplate,
+  deleteClassTemplate,
+  updateClassTemplate,
+  updateClassPictures,
+  addClassDate,
+  editClassDate,
+  deleteClassDate,
+  addClassRecording,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 
-const { addToS3, getSignedUrlFromS3 } = require('../aws/s3.commands.js');
-
 classes.get("/", async (req, res) => {
   try {
-    const { page, limit } = req.query;
-    const set = await getAllClasses(page, limit);
+    const { userId } = req.session;
+    const { page } = req.query;
+    const set = await getAllClasses(page, userId);
     res.status(200).json(camelizeKeys(set));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
 });
 
-classes.get("/classInfo/:classId", async (req, res) => {
+classes.get("/class-info/:classId", authenticateUser, async (req, res) => {
   try {
+    const { userId } = req.session;
     const { classId } = req.params;
-    const classById = await getClassById(classId);
+    const classById = await getClassById(classId, userId);
     res.status(200).json(camelizeKeys(classById));
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
 });
 
-classes.get("/classStudents/:classId", authenticateUser, async (req, res) => {
-  try {
-    const { classId } = req.params;
-    const students = await getClassStudents(classId);
-    res.status(200).json(camelizeKeys(students));
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-classes.get("/userClasses/:userId", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const classes = await getUserClasses(userId);
-    res.status(200).json(camelizeKeys(classes));
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
 classes.get(
-  "/instructorClasses/:instructorId",
+  "/class-students/:classDateId",
   authenticateUser,
   async (req, res) => {
     try {
-      const { instructorId } = req.params;
-      const classes = await getInstructorClasses(instructorId);
-      res.status(200).json(camelizeKeys(classes));
+      const { classDateId } = req.params;
+      const students = await getClassStudents(classDateId);
+      res.status(200).json(camelizeKeys(students));
     } catch (error) {
       res.status(404).json({ error: error.message });
     }
   }
 );
 
-classes.post('/class-recording', upload.single('recording'), async (req, res) => {
+classes.post(
+  "/create-class",
+  authenticateUser,
+  upload.fields([
+    { name: "highlightPicture", maxCount: 1 },
+    { name: "classPictures" },
+  ]),
+  async (req, res) => {
+    try {
+      const { userId } = req.session;
+      const highlight_picture = req.files.highlightPicture[0];
+      const class_pictures = req.files.classPictures || [];
+      const class_id = await createClassTemplate(
+        userId,
+        req.body,
+        highlight_picture,
+        class_pictures
+      );
+      res.status(200).json({ classId: class_id });
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
+
+classes.delete("/delete-class/:classId", authenticateUser, async (req, res) => {
   try {
-    const key = await addToS3(req.file);
-    const signedUrl = await getSignedUrlFromS3(key);
-    res.status(200).json(signedUrl);
+    const { classId } = req.params;
+    await deleteClassTemplate(classId);
+    res.status(200).json("Class deleted");
   } catch (error) {
-    console.log(error)
     res.status(404).json({ error: error.message });
   }
 });
+
+classes.put(
+  "/update-class-info/:classId",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const { classId } = req.params;
+      await updateClassTemplate(classId, req.body);
+      res.status(200).json("Class updated successfully.");
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
+
+classes.put(
+  "/update-class-pictures/:classId",
+  authenticateUser,
+  upload.fields([
+    { name: "highlightPicture", maxCount: 1 },
+    { name: "classPictures" },
+  ]),
+  async (req, res) => {
+    try {
+      const { classId } = req.params;
+      const highlight_picture = req.files.highlightPicture
+        ? req.files.highlightPicture[0]
+        : null;
+      const class_pictures = req.files.classPictures || [];
+      const { removeSelected } = req.body;
+      await updateClassPictures(
+        classId,
+        class_pictures,
+        removeSelected,
+        highlight_picture
+      );
+      res.status(200).json("Class pictures updated successfully.");
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
+
+classes.post(
+  "/add-class-date/:classId",
+  authenticateUser,
+  async (req, res) => {
+    try {
+      const { classId } = req.params;
+      const class_date = await addClassDate(classId, decamelizeKeys(req.body));
+      res.status(200).json(camelizeKeys(class_date));
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
+
+classes.put('/edit-class-date/:classDateId', authenticateUser, async (req, res) => {
+  try {
+    const { classDateId } = req.params;
+    const updated_date = await editClassDate(classDateId, decamelizeKeys(req.body));
+    res.status(200).json(camelizeKeys(updated_date));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+classes.delete('/delete-class-date/:classDateId', authenticateUser, async (req, res) => {
+  try {
+    const { classDateId } = req.params;
+    await deleteClassDate(classDateId);
+    res.status(200).json('Class date deleted successfully.');
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+classes.post(
+  "/class-recording/:classDateId",
+  authenticateUser,
+  upload.single("recording"),
+  async (req, res) => {
+    try {
+      const { classDateId } = req.params;
+      const { userId } = req.session;
+      const recording = req.file.recording ? req.file.recording[0] : null;
+      await addClassRecording(classDateId, recording, userId);
+    } catch (error) {
+      res.status(404).json({ error: error.message });
+    }
+  }
+);
 
 module.exports = classes;

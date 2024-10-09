@@ -5,6 +5,7 @@ const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 require('dotenv').config();
 const usersController = require('./controllers/users.controller.js');
+const instructorsController = require('./controllers/instructors.controller.js');
 const classesController = require('./controllers/classes.controller.js');
 
 const app = express();
@@ -27,6 +28,7 @@ app.use(session({
   }
 }));
 app.use('/users', usersController);
+app.use('/instructors', instructorsController);
 app.use('/classes', classesController);
 
 app.get('/', (req, res) => res.status(200).send('Welcome to Intel Loom\'s Backend!'));

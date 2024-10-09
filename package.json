@@ -6,6 +6,7 @@
   "scripts": {
     "db:init": "psql -U postgres -f db/schema.sql",
     "db:seed": "psql -U postgres -f db/seed.sql",
+    "db:triggers": "psql -U postgres -f db/triggers.sql",
     "test": "jest"
   },
   "keywords": [],
