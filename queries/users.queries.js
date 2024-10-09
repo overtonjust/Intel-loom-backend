@@ -26,7 +26,7 @@ const itsNewEmail = async (email) => {
 const userLogin = async (email, password) => {
   try {
     const user = await db.oneOrNone(
-      "SELECT user_id, password FROM users WHERE email = $1",
+      "SELECT user_id, password, is_instructor FROM users WHERE email = $1",
       email
     );
     if (!user) throw new Error("Invalid Credentials");
@@ -78,7 +78,7 @@ const userSignup = async (user, profile_picture) => {
       [
         first_name,
         middle_name,
- last_name,
+        last_name,
         username,
         birth_date,
         email,
@@ -137,10 +137,17 @@ const userInfo = async (id) => {
       FROM instructor_reviews
       JOIN users ON instructor_reviews.user_id = users.user_id
       WHERE instructor_reviews.instructor_id = $1
-      `, id
+      `,
+      id
     );
-    const instructor_total_ratings = await db.any('SELECT rating FROM instructor_ratings WHERE instructor_id = $1', id);
-    const average_rating = (instructor_total_ratings.reduce((acc, {rating}) => acc + rating, 0) / instructor_total_ratings.length).toFixed(2);
+    const instructor_total_ratings = await db.any(
+      "SELECT rating FROM instructor_ratings WHERE instructor_id = $1",
+      id
+    );
+    const average_rating = (
+      instructor_total_ratings.reduce((acc, { rating }) => acc + rating, 0) /
+      instructor_total_ratings.length
+    ).toFixed(2);
     user.rating = Number(average_rating) > 0 ? average_rating : null;
     return { ...user, instructor_links, instructor_reviews };
   } catch (error) {
@@ -198,7 +205,8 @@ const userDelete = async (email, password) => {
       FROM instructor_class_recordings
       JOIN class_recordings ON instructor_class_recordings.class_recording_id = class_recordings.class_recording_id
       WHERE instructor_class_recordings.instructor_id = $1
-      `, user.user_id
+      `,
+      user.user_id
     );
     if (user.profile_picture) await deleteFromS3(user.profile_picture);
     if (instructor_classes.length) {
@@ -296,11 +304,10 @@ const getUserClasses = async (id) => {
   try {
     const classes_info_bulk = await db.any(
       `
-      SELECT class_dates.*, classes.*, users.first_name, users.middle_name, users.last_name
+      SELECT class_dates.*, classes.*
       FROM booked_classes
       JOIN class_dates ON booked_classes.class_date_id = class_dates.class_date_id
       JOIN classes ON class_dates.class_id = classes.class_id
-      JOIN users ON classes.instructor_id = users.user_id
       WHERE booked_classes.user_id = $1
       AND class_dates.class_start >= NOW()
       `,
@@ -310,18 +317,15 @@ const getUserClasses = async (id) => {
     const class_map = new Map();
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
-        const check_bookedmarked = await db.oneOrNone('SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2', [id, classInfo.class_id]);
+        const check_bookedmarked = await db.oneOrNone(
+          "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
+          [id, classInfo.class_id]
+        );
         if (!class_map.has(classInfo.class_id)) {
           const signed_url = await getSignedUrlFromS3(
             classInfo.highlight_picture
           );
           class_map.set(classInfo.class_id, {
-            instructor: {
-              instructor_id: classInfo.instructor_id,
-              first_name: classInfo.first_name,
-              middle_name: classInfo.middle_name,
-              last_name: classInfo.last_name,
-            },
             class_id: classInfo.class_id,
             title: classInfo.title,
             highlight_picture: signed_url,
@@ -444,7 +448,8 @@ const userClassRecordings = async (id) => {
       JOIN class_dates ON class_recordings.class_date_id = class_dates.class_date_id
       JOIN classes ON class_dates.class_id = classes.class_id
       WHERE user_class_recordings.user_id = $1
-      `, id
+      `,
+      id
     );
     if (!recordings.length) return [];
     const formatted_recordings = recordings.map((recording) => ({
@@ -491,8 +496,14 @@ const cancelBooking = async (user_id, class_date_id) => {
 
 const addInstructorReview = async (user_id, instructor_id, review, rating) => {
   try {
-    await db.none('INSERT INTO instructor_reviews (user_id, instructor_id, review) VALUES ($1, $2, $3)', [user_id, instructor_id, review]);
-    await db.none('INSERT INTO instructor_ratings (instructor_id, rating) VALUES ($1, $2)', [instructor_id, rating]);
+    await db.none(
+      "INSERT INTO instructor_reviews (user_id, instructor_id, review) VALUES ($1, $2, $3)",
+      [user_id, instructor_id, review]
+    );
+    await db.none(
+      "INSERT INTO instructor_ratings (instructor_id, rating) VALUES ($1, $2)",
+      [instructor_id, rating]
+    );
   } catch (error) {
     throw error;
   }
@@ -505,9 +516,11 @@ const becomeInstructorCheck = async (id) => {
       SELECT profile_picture, bio, linkedin
       FROM users
       WHERE user_id = $1
-      `, id
+      `,
+      id
     );
-    if (user.profile_picture) user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
+    if (user.profile_picture)
+      user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
     return user;
   } catch (error) {
     throw error;
@@ -550,7 +563,8 @@ const finishInstructorSignup = async (id, user, new_profile_picture) => {
       UPDATE users
       SET bio = $1, linkedin = $2
       WHERE user_id = $3
-      `, [bio, linkedin, id]
+      `,
+      [bio, linkedin, id]
     );
     return await userInfo(id);
   } catch (error) {

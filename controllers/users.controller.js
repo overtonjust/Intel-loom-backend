@@ -62,6 +62,7 @@ users.post("/login", async (req, res) => {
     const user = await userLogin(email, password);
     req.session.userId = user.user_id;
     req.session.loggedIn = true;
+    console.log(req.session);
     res.status(200).json(camelizeKeys(user));
   } catch (error) {
     res.status(401).json({ error: error.message });
