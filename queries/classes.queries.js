@@ -161,7 +161,7 @@ const getClassStudents = async (id) => {
     const students = await db.any(
       `
       SELECT
-      users.user_id, users.first_name, users.middle_name, users.last_name, users.email, users.profile_picture, users.bio
+      users.user_id, users.first_name, users.middle_name, users.last_name, users.email, users.profile_picture
       FROM booked_classes
       JOIN users ON booked_classes.user_id = users.user_id
       WHERE class_date_id = $1`,
