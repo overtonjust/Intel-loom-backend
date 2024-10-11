@@ -132,7 +132,6 @@ const getClassById = async (id, user_id) => {
       class_id: class_info_bulk.class_id,
       title: class_info_bulk.title,
       price: class_info_bulk.price,
-      highlight_picture: highlight_picture_signed_url,
       is_bookmarked: check_bookmarked ? true : false,
       instructor: {
         instructor_id: class_info_bulk.instructor_id,
@@ -168,6 +167,46 @@ const getClassStudents = async (id) => {
       id
     );
     return students;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const getClassDateInfo = async (class_date_id) => {
+  try {
+    const class_date_info = await db.one(
+      `
+      SELECT class_dates.class_start, class_dates.class_end,
+      classes.title, classes.description, classes.price, classes.highlight_picture, classes.class_id
+      FROM class_dates
+      JOIN classes ON class_dates.class_id = classes.class_id
+      WHERE class_date_id = $1
+      `, class_date_id
+    );
+    class_date_info.highlight_picture = await getSignedUrlFromS3(class_date_info.highlight_picture);
+    let class_students = await getClassStudents(class_date_id);
+    if (class_students.length) {
+      class_students = await Promise.all(class_students.map(async (user) => {
+        user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
+        return user;
+      }))
+    }
+    let class_pictures = await db.any('SELECT picture_key FROM class_pictures WHERE class_id = $1', class_date_info.class_id);
+    if (class_pictures.length) {
+      class_pictures = await Promise.all(class_pictures.map(async ({ picture_key }) => await getSignedUrlFromS3(picture_key)));
+    }
+    const formatted_class_date_info = {
+      class_start: class_date_info.class_start,
+      class_end: class_date_info.class_end,
+      class_students,
+      class_info: {
+        title: class_date_info.title,
+        description: class_date_info.description,
+        price: class_date_info.price,
+        class_pictures: [class_date_info.highlight_picture, ...class_pictures],
+      }
+    }
+    return formatted_class_date_info;
   } catch (error) {
     throw error;
   }
@@ -397,7 +436,7 @@ const addClassRecording = async (class_date_id, recording, instructor_id) => {
 module.exports = {
   getAllClasses,
   getClassById,
-  getClassStudents,
+  getClassDateInfo,
   createClassTemplate,
   deleteClassTemplate,
   updateClassTemplate,
