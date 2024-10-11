@@ -5,7 +5,7 @@ const { camelizeKeys, decamelizeKeys } = require("humps");
 const {
   getAllClasses,
   getClassById,
-  getClassStudents,
+  getClassDateInfo,
   createClassTemplate,
   deleteClassTemplate,
   updateClassTemplate,
@@ -40,13 +40,13 @@ classes.get("/class-info/:classId", authenticateUser, async (req, res) => {
 });
 
 classes.get(
-  "/class-students/:classDateId",
+  "/class-date-info/:classDateId",
   authenticateUser,
   async (req, res) => {
     try {
       const { classDateId } = req.params;
-      const students = await getClassStudents(classDateId);
-      res.status(200).json(camelizeKeys(students));
+      const classDateInfo = await getClassDateInfo(classDateId);
+      res.status(200).json(camelizeKeys(classDateInfo));
     } catch (error) {
       res.status(404).json({ error: error.message });
     }
