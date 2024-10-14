@@ -11,7 +11,7 @@ const classesController = require('./controllers/classes.controller.js');
 const app = express();
 
 app.use(cors({
-  origin : ['http://localhost:5173','https://intel-loom.netlify.app/'],
+  origin : '*',
   credentials : true
 }));
 app.use(express.json());
