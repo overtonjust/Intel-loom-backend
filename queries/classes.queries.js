@@ -1,4 +1,6 @@
 const db = require("../db/dbConfig.js");
+const axios = require('axios');
+require('dotenv').config()
 const {
   getSignedUrlFromS3,
   deleteFromS3,
@@ -253,6 +255,18 @@ const createClassTemplate = async (
         })
       );
     }
+    const msURL = process.env.MS_URL;
+    const msAccess = process.env.MS_APP_ACCESS_KEY
+    const msSecret = process.env.MS_APP_SECRET
+    const msToken = process.env.MS_TOKEN
+    const { data: {id} } = await axios.post(`${msURL}/rooms`, {name: title}, {
+      headers: {
+        'APP_ACCESS_KEY': msAccess,
+        'APP_SECRET': msSecret,
+        'Authorization': `Bearer ${msToken}`
+      }
+    })
+    await db.none('UPDATE classes SET room_id = $1 WHERE class_id = $2', [id, class_id]);
     return class_id;
   } catch (error) {
     throw error;
