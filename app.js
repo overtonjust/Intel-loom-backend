@@ -29,7 +29,7 @@ app.use(session({
     sameSite: 'none',
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
     httpOnly : false,
-    secure : process.env.NODE_ENV === 'production'
+    secure : true
   }
 }));
 app.use('/users', usersController);
