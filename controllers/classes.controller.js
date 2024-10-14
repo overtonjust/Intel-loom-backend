@@ -56,19 +56,14 @@ classes.get(
 classes.post(
   "/create-class",
   authenticateUser,
-  upload.fields([
-    { name: "highlightPicture", maxCount: 1 },
-    { name: "classPictures" },
-  ]),
+  upload.array("classPictures"),
   async (req, res) => {
     try {
       const { userId } = req.session;
-      const highlight_picture = req.files.highlightPicture[0];
-      const class_pictures = req.files.classPictures || [];
+      const class_pictures = req.files;
       const class_id = await createClassTemplate(
         userId,
         req.body,
-        highlight_picture,
         class_pictures
       );
       res.status(200).json({ classId: class_id });
@@ -105,23 +100,15 @@ classes.put(
 classes.put(
   "/update-class-pictures/:classId",
   authenticateUser,
-  upload.fields([
-    { name: "highlightPicture", maxCount: 1 },
-    { name: "classPictures" },
-  ]),
+  upload.array("classPictures"),
   async (req, res) => {
     try {
-      const { classId } = req.params;
-      const highlight_picture = req.files.highlightPicture
-        ? req.files.highlightPicture[0]
-        : null;
-      const class_pictures = req.files.classPictures || [];
-      const { removeSelected } = req.body;
+      const { classId } = req.params; // Change logic to update class pictures
+      const class_pictures = req.files;
       await updateClassPictures(
         classId,
         class_pictures,
-        removeSelected,
-        highlight_picture
+        req.body
       );
       res.status(200).json("Class pictures updated successfully.");
     } catch (error) {
