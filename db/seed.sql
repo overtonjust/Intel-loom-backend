@@ -184,15 +184,15 @@ VALUES
 
 INSERT INTO instructor_links (instructor_id, link)
 VALUES 
-(2, 'https://youtu.be/bJzb-RuUcMU'), 
-(2, 'https://youtu.be/I-k-iTUMQAY'),
-(2, 'https://youtu.be/zOjov-2OZ0E'),
-(3, 'https://youtu.be/bJzb-RuUcMU'),
-(3, 'https://youtu.be/I-k-iTUMQAY'),
-(3, 'https://youtu.be/zOjov-2OZ0E'),
-(4, 'https://youtu.be/bJzb-RuUcMU'),
-(4, 'https://youtu.be/I-k-iTUMQAY'),
-(4, 'https://youtu.be/zOjov-2OZ0E');
+(2, 'https://youtube.com/embed/bJzb-RuUcMU'), 
+(2, 'https://youtube.com/embed/I-k-iTUMQAY'),
+(2, 'https://youtube.com/embed/zOjov-2OZ0E'),
+(3, 'https://youtube.com/embed/bJzb-RuUcMU'),
+(3, 'https://youtube.com/embed/I-k-iTUMQAY'),
+(3, 'https://youtube.com/embed/zOjov-2OZ0E'),
+(4, 'https://youtube.com/embed/bJzb-RuUcMU'),
+(4, 'https://youtube.com/embed//I-k-iTUMQAY'),
+(4, 'https://youtube.com/embed/zOjov-2OZ0E');
 
 INSERT INTO instructor_reviews (instructor_id, user_id, review)
 VALUES
