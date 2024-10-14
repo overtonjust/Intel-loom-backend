@@ -1,6 +1,10 @@
 const db = require("../db/dbConfig.js");
 const axios = require('axios');
-require('dotenv').config()
+require('dotenv').config();
+const msURL = process.env.MS_URL;
+const msAccess = process.env.MS_APP_ACCESS_KEY;
+const msSecret = process.env.MS_APP_SECRET;
+const msToken = process.env.MS_TOKEN;
 const {
   getSignedUrlFromS3,
   deleteFromS3,
@@ -255,10 +259,6 @@ const createClassTemplate = async (
         })
       );
     }
-    const msURL = process.env.MS_URL;
-    const msAccess = process.env.MS_APP_ACCESS_KEY
-    const msSecret = process.env.MS_APP_SECRET
-    const msToken = process.env.MS_TOKEN
     const { data: {id} } = await axios.post(`${msURL}/rooms`, {name: title}, {
       headers: {
         'APP_ACCESS_KEY': msAccess,
@@ -441,6 +441,36 @@ const addClassRecording = async (class_date_id, recording, instructor_id) => {
   }
 };
 
+const getRoomCodeWithUser = async (class_id, user_id) => {
+  try {
+    const { instructor_id, room_id } = await db.oneOrNone(
+      `
+      SELECT instructor_id, room_id
+      FROM classes
+      WHERE class_id = $1
+      `, class_id
+    );
+    const { first_name, last_name } = await db.oneOrNone(
+      `
+      SELECT first_name, last_name
+      FROM users
+      WHERE user_id = $1
+      `, user_id
+    );
+    const user_role = instructor_id === Number(user_id) ? 'host' : 'guest';
+    const { data: {code} } = await axios.post(`${msURL}/room-codes/room/${room_id}/role/${user_role}`, {}, {
+      headers: {
+        'APP_ACCESS_KEY': msAccess,
+        'APP_SECRET': msSecret,
+        'Authorization': `Bearer ${msToken}`
+      }
+    })
+    return {first_name, last_name, roomCode: code};
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   getAllClasses,
   getClassById,
@@ -453,4 +483,5 @@ module.exports = {
   editClassDate,
   deleteClassDate,
   addClassRecording,
+  getRoomCodeWithUser,
 };

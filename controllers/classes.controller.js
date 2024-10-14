@@ -14,6 +14,7 @@ const {
   editClassDate,
   deleteClassDate,
   addClassRecording,
+  getRoomCodeWithUser,
 } = require("../queries/classes.queries.js");
 const { authenticateUser } = require("../auth/users.auth.js");
 
@@ -166,5 +167,16 @@ classes.post(
     }
   }
 );
+
+classes.get("/get-room-code/:classId", authenticateUser, async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { userId } = req.session;
+    const user = await getRoomCodeWithUser(classId, userId);
+    res.status(200).json(camelizeKeys(user));
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+})
 
 module.exports = classes;
