@@ -23,7 +23,7 @@ const getAllClasses = async (page = 1, user_id) => {
       ORDER BY classes.class_id
       LIMIT 21 OFFSET $1
       `,
-      offset
+      [offset, user_id]
     );
     const more_classes = classes_info_bulk.length > 20;
     if (more_classes) classes_info_bulk.pop();
