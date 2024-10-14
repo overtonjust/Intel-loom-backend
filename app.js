@@ -12,6 +12,7 @@ const app = express();
 
 app.use(cors({
   origin : '*',
+  methods: "GET,POST,PUT,DELETE",
   credentials : true
 }));
 app.use(express.json());
@@ -26,7 +27,7 @@ app.use(session({
   saveUninitialized : false,
   cookie : {
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
-    httpOnly : true,
+    httpOnly : false,
     secure : process.env.NODE_ENV === 'production'
   }
 }));
