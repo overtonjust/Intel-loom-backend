@@ -45,10 +45,9 @@ CREATE TABLE classes (
   instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   title VARCHAR(50) NOT NULL,
   description TEXT NOT NULL,
-  highlight_picture TEXT NOT NULL,
   price DECIMAL(5, 2) NOT NULL,
   capacity INTEGER NOT NULL CHECK (capacity <= 20),
-  room_id TEXT NOT NULL
+  room_id TEXT
 );
 
 CREATE TABLE class_dates (
@@ -60,8 +59,10 @@ CREATE TABLE class_dates (
 );
 
 CREATE TABLE class_pictures (
+  picture_id SERIAL PRIMARY KEY,
   class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
-  picture_key TEXT NOT NULL
+  picture_key TEXT NOT NULL,
+  is_highlight BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE class_recordings (

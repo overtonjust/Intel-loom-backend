@@ -196,7 +196,7 @@ const userDelete = async (email, password) => {
     const passwordMatched = await bcrypt.compare(password, user.password);
     if (!passwordMatched) throw new Error("Invalid Credentials");
     const instructor_classes = await db.any(
-      "SELECT class_id, highlight_picture FROM classes WHERE instructor_id = $1",
+      "SELECT class_id FROM classes WHERE instructor_id = $1",
       user.user_id
     );
     const instructor_recordings = await db.any(
@@ -211,8 +211,7 @@ const userDelete = async (email, password) => {
     if (user.profile_picture) await deleteFromS3(user.profile_picture);
     if (instructor_classes.length) {
       await Promise.all(
-        instructor_classes.map(async ({ class_id, highlight_picture }) => {
-          if (highlight_picture) await deleteFromS3(highlight_picture);
+        instructor_classes.map(async ({ class_id }) => {
           const class_pictures = await db.any(
             "SELECT picture_key FROM class_pictures WHERE class_id = $1",
             class_id
@@ -309,7 +308,7 @@ const getUserClasses = async (id) => {
       JOIN class_dates ON booked_classes.class_date_id = class_dates.class_date_id
       JOIN classes ON class_dates.class_id = classes.class_id
       WHERE booked_classes.user_id = $1
-      AND class_dates.class_start >= NOW()
+      AND class_dates.class_start >= (NOW() - INTERVAL '1 HOUR')
       `,
       id
     );
@@ -322,8 +321,12 @@ const getUserClasses = async (id) => {
           [id, classInfo.class_id]
         );
         if (!class_map.has(classInfo.class_id)) {
+          const getHighlightPicture = await db.one(
+            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
+            classInfo.class_id
+          );
           const signed_url = await getSignedUrlFromS3(
-            classInfo.highlight_picture
+            getHighlightPicture.picture_key
           );
           class_map.set(classInfo.class_id, {
             class_id: classInfo.class_id,
@@ -379,8 +382,12 @@ const getUserBookmarks = async (id) => {
     await Promise.all(
       bookmarks_info_bulk.map(async (classInfo) => {
         if (!bookmark_map.has(classInfo.class_id)) {
+          const getHighlightPicture = await db.one(
+            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
+            classInfo.class_id
+          );
           const signed_url = await getSignedUrlFromS3(
-            classInfo.highlight_picture
+            getHighlightPicture.picture_key
           );
           bookmark_map.set(classInfo.class_id, {
             instructor: {
@@ -452,11 +459,13 @@ const userClassRecordings = async (id) => {
       id
     );
     if (!recordings.length) return [];
-    const formatted_recordings = recordings.map((recording) => ({
-      class_start: format_recording_date(recording.class_start),
-      title: recording.title,
-      recording_key: recording.recording_key,
-    }));
+    const formatted_recordings = await Promise.all(
+      recordings.map(async (recording) => ({
+        class_date: format_recording_date(recording.class_start),
+        title: recording.title,
+        recording_key: await getSignedUrlFromS3(recording.recording_key),
+      }))
+    );
     return formatted_recordings;
   } catch (error) {
     throw error;

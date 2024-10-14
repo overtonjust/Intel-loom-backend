@@ -1,7 +1,5 @@
 const db = require("../db/dbConfig.js");
-const {
-  getSignedUrlFromS3,
-} = require("../aws/s3.commands.js");
+const { getSignedUrlFromS3 } = require("../aws/s3.commands.js");
 const { format_date } = require("../utils.js");
 
 const addInstructorLinks = async (instructor_id, instructor_links) => {
@@ -62,8 +60,12 @@ const getInstructorClasses = async (id) => {
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
         if (!class_map.has(classInfo.class_id)) {
+          const getHighlightPicture = await db.one(
+            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
+            classInfo.class_id
+          );
           const signed_url = await getSignedUrlFromS3(
-            classInfo.highlight_picture
+            getHighlightPicture.picture_key
           );
           class_map.set(classInfo.class_id, {
             class_id: classInfo.class_id,
@@ -103,7 +105,7 @@ const getInstructorClasses = async (id) => {
 
 const getInstructorClassTemplates = async (id) => {
   try {
-    const class_templates = await db.any(
+    let class_templates = await db.any(
       `
       SELECT classes.class_id, classes.title
       FROM classes 
@@ -111,6 +113,20 @@ const getInstructorClassTemplates = async (id) => {
       `,
       id
     );
+    if (class_templates.length) {
+      class_templates = await Promise.all(
+        class_templates.map(async (class_template) => {
+          const getHighlightPicture = await db.one(
+            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
+            class_template.class_id
+          );
+          class_template.highlight_picture = await getSignedUrlFromS3(
+            getHighlightPicture.picture_key
+          );
+          return class_template;
+        })
+      );
+    }
     return class_templates;
   } catch (error) {
     throw error;
@@ -141,9 +157,6 @@ const getInstructorClassTemplateById = async (id) => {
       `,
       id
     );
-    const highlight_picture_signed_url = await getSignedUrlFromS3(
-      class_info_bulk.highlight_picture
-    );
     const class_pictures_signed_urls = await Promise.all(
       class_pictures.map(
         async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
@@ -153,10 +166,7 @@ const getInstructorClassTemplateById = async (id) => {
     const formatted_class_info = {
       ...class_info_bulk,
       class_dates,
-      class_pictures: [
-        highlight_picture_signed_url,
-        ...class_pictures_signed_urls,
-      ],
+      class_pictures: [...class_pictures_signed_urls],
     };
     return formatted_class_info;
   } catch (error) {
@@ -174,14 +184,17 @@ const instructorClassRecordings = async (id) => {
       JOIN class_dates ON class_recordings.class_date_id = class_dates.class_date_id
       JOIN classes ON class_dates.class_id = classes.class_id
       WHERE instructor_class_recordings.instructor_id = $1
-      `, id
+      `,
+      id
     );
     if (!recordings.length) return [];
-    const formatted_recordings = recordings.map((recording) => ({
-      class_start: format_recording_date(recording.class_start),
-      title: recording.title,
-      recording_key: recording.recording_key,
-    }));
+    const formatted_recordings = await Promise.all(
+      recordings.map(async (recording) => ({
+        class_date: format_recording_date(recording.class_start),
+        title: recording.title,
+        recording_key: await getSignedUrlFromS3(recording.recording_key),
+      }))
+    );
     return formatted_recordings;
   } catch (error) {
     throw error;

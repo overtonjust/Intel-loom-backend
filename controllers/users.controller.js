@@ -73,9 +73,7 @@ users.post(
   upload.single("profilePicture"),
   async (req, res) => {
     try {
-      const profile_picture = req.files.profilePicture
-        ? req.files.profilePicture[0]
-        : null;
+      const profile_picture = req.file;
       const user_id = await userSignup(
         decamelizeKeys(req.body),
         profile_picture,
@@ -91,7 +89,7 @@ users.post(
 
 users.put("/update-profile", authenticateUser, upload.single('profilePicture'), async (req, res) => {
   try {
-    const profile_picture = req.file.profilePicture ? req.file.profilePicture[0] : null;
+    const profile_picture = req.file;
     const updated_user = await updateProfile(req.session.userId, req.body, profile_picture);
     res.status(200).json(camelizeKeys(updated_user));
   } catch (error) {

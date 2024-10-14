@@ -10,13 +10,16 @@ const getAllClasses = async (page = 1, user_id) => {
     const offset = (page - 1) * 20;
     const classes_info_bulk = await db.any(
       `
-      SELECT classes.*, users.first_name, users.middle_name, users.last_name, MIN(class_dates.class_start) AS class_start 
+      SELECT classes.*, users.first_name, users.middle_name, users.last_name, MIN(class_dates.class_start) AS class_start,
+      COUNT(class_dates.class_date_id) AS class_dates_count, COUNT(booked_classes.class_date_id) AS booked_dates_count
       FROM classes
       JOIN users ON classes.instructor_id = users.user_id
       JOIN class_dates ON classes.class_id = class_dates.class_id
+      LEFT JOIN booked_classes ON class_dates.class_date_id = booked_classes.class_date_id AND booked_classes.user_id = $2
       WHERE class_dates.class_start >= (NOW() + INTERVAL '1 hour')
       AND class_dates.students < classes.capacity
       GROUP BY classes.class_id, users.user_id
+      HAVING COUNT(class_dates.class_date_id) > COUNT(booked_classes.class_date_id)
       ORDER BY classes.class_id
       LIMIT 21 OFFSET $1
       `,
@@ -31,8 +34,12 @@ const getAllClasses = async (page = 1, user_id) => {
           "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
           [user_id, classInfo.class_id]
         );
+        const getHighlightPicture = await db.one(
+          "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
+          classInfo.class_id
+        );
         const signed_url = await getSignedUrlFromS3(
-          classInfo.highlight_picture
+          getHighlightPicture.picture_key
         );
         return {
           class_id: classInfo.class_id,
@@ -75,12 +82,15 @@ const getClassById = async (id, user_id) => {
       SELECT class_dates.*
       FROM class_dates
       JOIN classes ON class_dates.class_id = classes.class_id
+      LEFT JOIN booked_classes ON class_dates.class_date_id = booked_classes.class_date_id
+      AND booked_classes.user_id = $2
       WHERE class_dates.class_id = $1
       AND class_dates.class_start >= (NOW() + INTERVAL '1 hour')
       AND class_dates.students < classes.capacity
+      AND booked_classes.class_date_id IS NULL
       ORDER BY class_dates.class_start
       `,
-      id
+      [id, user_id]
     );
     const class_pictures = await db.any(
       `
@@ -92,7 +102,7 @@ const getClassById = async (id, user_id) => {
     );
     const more_classes_from_instructor = await db.any(
       `
-      SELECT classes.class_id, classes.title, classes.price, classes.highlight_picture
+      SELECT classes.class_id, classes.title, classes.price
       FROM classes
       WHERE classes.instructor_id = $1
       AND classes.class_id != $2
@@ -108,17 +118,18 @@ const getClassById = async (id, user_id) => {
             [user_id, classInfo.class_id]
           );
           classInfo.is_bookmarked = check_bookmarked ? true : false;
+          const getHighlightPicture = await db.one(
+            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
+            classInfo.class_id
+          );
           classInfo.highlight_picture = await getSignedUrlFromS3(
-            classInfo.highlight_picture
+            getHighlightPicture.picture_key
           );
         })
       );
     }
     const profile_picture_signed_url = await getSignedUrlFromS3(
       class_info_bulk.profile_picture
-    );
-    const highlight_picture_signed_url = await getSignedUrlFromS3(
-      class_info_bulk.highlight_picture
     );
     let class_pictures_signed_urls = [];
     if (class_pictures.length) {
@@ -132,6 +143,7 @@ const getClassById = async (id, user_id) => {
       class_id: class_info_bulk.class_id,
       title: class_info_bulk.title,
       price: class_info_bulk.price,
+      description: class_info_bulk.description,
       is_bookmarked: check_bookmarked ? true : false,
       instructor: {
         instructor_id: class_info_bulk.instructor_id,
@@ -143,10 +155,7 @@ const getClassById = async (id, user_id) => {
         bio: class_info_bulk.bio,
       },
       class_dates,
-      class_pictures: [
-        highlight_picture_signed_url,
-        ...class_pictures_signed_urls,
-      ],
+      class_pictures: [...class_pictures_signed_urls],
       more_classes_from_instructor,
     };
     return formatted_class_info;
@@ -177,35 +186,31 @@ const getClassDateInfo = async (class_date_id) => {
     const class_date_info = await db.one(
       `
       SELECT class_dates.class_start, class_dates.class_end,
-      classes.title, classes.description, classes.price, classes.highlight_picture, classes.class_id
+      classes.title, classes.class_id
       FROM class_dates
       JOIN classes ON class_dates.class_id = classes.class_id
       WHERE class_date_id = $1
-      `, class_date_id
+      `,
+      class_date_id
     );
-    class_date_info.highlight_picture = await getSignedUrlFromS3(class_date_info.highlight_picture);
     let class_students = await getClassStudents(class_date_id);
     if (class_students.length) {
-      class_students = await Promise.all(class_students.map(async (user) => {
-        user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
-        return user;
-      }))
-    }
-    let class_pictures = await db.any('SELECT picture_key FROM class_pictures WHERE class_id = $1', class_date_info.class_id);
-    if (class_pictures.length) {
-      class_pictures = await Promise.all(class_pictures.map(async ({ picture_key }) => await getSignedUrlFromS3(picture_key)));
+      class_students = await Promise.all(
+        class_students.map(async (user) => {
+          user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
+          return user;
+        })
+      );
     }
     const formatted_class_date_info = {
       class_start: class_date_info.class_start,
       class_end: class_date_info.class_end,
       class_students,
       class_info: {
+        class_id: class_date_info.class_id,
         title: class_date_info.title,
-        description: class_date_info.description,
-        price: class_date_info.price,
-        class_pictures: [class_date_info.highlight_picture, ...class_pictures],
-      }
-    }
+      },
+    };
     return formatted_class_date_info;
   } catch (error) {
     throw error;
@@ -215,16 +220,14 @@ const getClassDateInfo = async (class_date_id) => {
 const createClassTemplate = async (
   instructor_id,
   classInfo,
-  highlight_picture,
   class_pictures
 ) => {
   try {
-    const { title, description, price, capacity } = classInfo;
-    const highlight_picture_key = await addToS3(highlight_picture);
+    const { title, description, price, capacity, highlightPicture } = classInfo;
     const { class_id } = await db.one(
       `
-      INSERT INTO classes (instructor_id, title, description, price, capacity, highlight_picture)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO classes (instructor_id, title, description, price, capacity)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING class_id
       `,
       [
@@ -233,19 +236,19 @@ const createClassTemplate = async (
         description,
         price,
         capacity,
-        highlight_picture_key,
       ]
     );
     if (class_pictures.length) {
       await Promise.all(
-        class_pictures.map(async (picture) => {
+        class_pictures.map(async (picture, idx) => {
           const picture_key = await addToS3(picture);
+          const is_highlight = idx === Number(highlightPicture);
           await db.none(
             `
-            INSERT INTO class_pictures (class_id, picture_key)
-            VALUES ($1, $2)
+            INSERT INTO class_pictures (class_id, picture_key, is_highlight)
+            VALUES ($1, $2, $3)
             `,
-            [class_id, picture_key]
+            [class_id, picture_key, is_highlight]
           );
         })
       );
@@ -273,15 +276,6 @@ const deleteClassTemplate = async (class_id) => {
         })
       );
     }
-    const { highlight_picture } = await db.one(
-      `
-      SELECT highlight_picture
-      FROM classes
-      WHERE class_id = $1
-      `,
-      class_id
-    );
-    await deleteFromS3(highlight_picture);
     await db.none(
       `
       DELETE FROM classes
