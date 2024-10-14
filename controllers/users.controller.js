@@ -62,13 +62,7 @@ users.post("/login", async (req, res) => {
     const user = await userLogin(email, password);
     req.session.userId = user.user_id;
     req.session.loggedIn = true;
-    res.set('Access-Control-Allow-Credentials', 'true');
-    req.session.save((err) => {
-      if (err) {
-        throw new Error('Failed to save session')
-      }
-      res.status(200).json(camelizeKeys(user));
-    });
+    res.status(200).json(camelizeKeys(user));
   } catch (error) {
     res.status(401).json({ error: error.message });
   }
