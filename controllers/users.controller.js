@@ -80,9 +80,6 @@ users.post("/register", upload.single("profilePicture"), async (req, res) => {
   }
 });
 
-users.put(
-  "/update-profile",
-  authenticateUser,
 users.post("/register", upload.single("profilePicture"), async (req, res) => {
   try {
     const profile_picture = req.file;
@@ -106,12 +103,7 @@ users.put(
         req.session.userId,
         req.body,
         profile_picture
-      const updated_user = await updateProfile(
-        req.session.userId,
-        req.body,
-        profile_picture
       );
-      res.status(200).json(camelizeKeys(updated_user));
       res.status(200).json(camelizeKeys(updated_user));
     } catch (error) {
       res.status(500).json({ error: error.message });
