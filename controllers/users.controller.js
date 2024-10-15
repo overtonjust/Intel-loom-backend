@@ -62,7 +62,16 @@ users.post("/login", async (req, res) => {
     const user = await userLogin(email, password);
     req.session.userId = user.user_id;
     req.session.loggedIn = true;
+<<<<<<< HEAD
     res.status(200).json(camelizeKeys(user));
+=======
+    /* req.session.save((err) => { */
+    /*   if (err) { */
+    /*     throw new Error("Failed to save session"); */
+    /*   } */
+      res.status(200).json(camelizeKeys(user));
+    /* }); */
+>>>>>>> dfb5d75 (rebase)
   } catch (error) {
     res.status(401).json({ error: error.message });
   }
