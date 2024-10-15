@@ -28,7 +28,7 @@ app.use(session({
   saveUninitialized : false,
   credentials: 'include',
   cookie : {
-    sameSite: 'none',
+    sameSite: 'lax',
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
     httpOnly : true,
     secure : true,
