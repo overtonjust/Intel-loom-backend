@@ -26,13 +26,13 @@ app.use(session({
   secret : process.env.SECRET,
   resave : false,
   saveUninitialized : false,
+  credentials: 'include',
   cookie : {
     sameSite: 'none',
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
     httpOnly : true,
     secure : true,
-    path: '/',
-    domain: 'intel-loom.netlify.app'
+    path: '/'
   },
   proxy: true
 }));
