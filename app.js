@@ -28,10 +28,10 @@ app.use(session({
   saveUninitialized : false,
   credentials: 'include',
   cookie : {
-    sameSite: 'lax',
+    sameSite: 'none',
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
     httpOnly : true,
-    secure : true,
+    secure : process.env.NODE_ENV === 'production',
     path: '/'
   },
   proxy: true
