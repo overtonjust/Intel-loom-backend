@@ -27,10 +27,10 @@ app.use(session({
   resave : false,
   saveUninitialized : false,
   cookie : {
-    sameSite: 'none',
+    sameSite: 'lax',
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
     httpOnly : true,
-    secure : true
+    secure : false
   }
 }));
 app.use('/users', usersController);
