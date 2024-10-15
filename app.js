@@ -31,8 +31,10 @@ app.use(session({
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
     httpOnly : true,
     secure : true,
+    path: '/',
     domain: 'intel-loom.netlify.app'
-  }
+  },
+  proxy: true
 }));
 app.use('/users', usersController);
 app.use('/instructors', instructorsController);
