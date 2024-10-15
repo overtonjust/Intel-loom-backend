@@ -30,7 +30,8 @@ app.use(session({
     sameSite: 'none',
     maxAge : 1000 * 60 * 60 * 5, // 5 hours
     httpOnly : true,
-    secure : true
+    secure : true,
+    domain: 'intel-loom.netlify.app'
   }
 }));
 app.use('/users', usersController);
