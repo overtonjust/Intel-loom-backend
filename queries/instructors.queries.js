@@ -45,6 +45,7 @@ const deleteInstructorLinks = async (instructor_id, remove_links) => {
 
 const getInstructorClasses = async (id) => {
   try {
+    await db.none("SET TIMEZONE = 'America/New_York';");
     const classes_info_bulk = await db.any(
       `
       SELECT classes.*, class_dates.*
@@ -135,6 +136,7 @@ const getInstructorClassTemplates = async (id) => {
 
 const getInstructorClassTemplateById = async (id) => {
   try {
+    await db.none("SET TIMEZONE = 'America/New_York';");
     const class_info_bulk = await db.oneOrNone(
       "SELECT * FROM classes WHERE classes.class_id = $1",
       id
@@ -162,7 +164,6 @@ const getInstructorClassTemplateById = async (id) => {
         async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
       )
     );
-    class_info_bulk.highlight_picture = highlight_picture_signed_url;
     const formatted_class_info = {
       ...class_info_bulk,
       class_dates,

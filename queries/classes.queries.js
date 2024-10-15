@@ -14,6 +14,7 @@ const {
 const getAllClasses = async (page = 1, user_id) => {
   try {
     const offset = (page - 1) * 20;
+    await db.none("SET TIMEZONE = 'America/New_York';");
     const classes_info_bulk = await db.any(
       `
       SELECT classes.*, users.first_name, users.middle_name, users.last_name, MIN(class_dates.class_start) AS class_start,
@@ -70,6 +71,7 @@ const getAllClasses = async (page = 1, user_id) => {
 
 const getClassById = async (id, user_id) => {
   try {
+    await db.none("SET TIMEZONE = 'America/New_York';");
     const class_info_bulk = await db.oneOrNone(
       `
       SELECT classes.*, users.first_name, users.middle_name, users.last_name, users.email, users.profile_picture, users.bio
@@ -372,6 +374,7 @@ const updateClassPictures = async (
 const addClassDate = async (class_id, class_dates) => {
   try {
     const { class_start, class_end } = class_dates;
+    await db.none("SET TIMEZONE = 'America/New_York';");
     const class_date = await db.one(
       `
       INSERT INTO class_dates (class_id, class_start, class_end)
@@ -388,6 +391,7 @@ const addClassDate = async (class_id, class_dates) => {
 const editClassDate = async (class_date_id, class_dates) => {
   try {
     const { class_start, class_end } = class_dates;
+    await db.none("SET TIMEZONE = 'America/New_York';");
     const updated_date = await db.one(
       `
       UPDATE class_dates SET class_start = $1, class_end = $2

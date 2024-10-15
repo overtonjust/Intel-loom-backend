@@ -62,45 +62,42 @@ users.post("/login", async (req, res) => {
     const user = await userLogin(email, password);
     req.session.userId = user.user_id;
     req.session.loggedIn = true;
-    /* req.session.save((err) => { */
-    /*   if (err) { */
-    /*     throw new Error("Failed to save session"); */
-    /*   } */
-      res.status(200).json(camelizeKeys(user));
-    /* }); */
+    res.status(200).json(camelizeKeys(user));
   } catch (error) {
     res.status(401).json({ error: error.message });
   }
 });
 
-users.post(
-  "/register",
+users.post("/register", upload.single("profilePicture"), async (req, res) => {
+  try {
+    const profile_picture = req.file;
+    const user = await userSignup(decamelizeKeys(req.body), profile_picture);
+    req.session.userId = user_id;
+    req.session.loggedIn = true;
+    res.status(200).json(camelizeKeys(user));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+users.put(
+  "/update-profile",
+  authenticateUser,
   upload.single("profilePicture"),
   async (req, res) => {
     try {
       const profile_picture = req.file;
-      const user_id = await userSignup(
-        decamelizeKeys(req.body),
-        profile_picture,
+      const updated_user = await updateProfile(
+        req.session.userId,
+        req.body,
+        profile_picture
       );
-      req.session.userId = user_id;
-      req.session.loggedIn = true;
-      res.status(200).json({ userId: user_id });
+      res.status(200).json(camelizeKeys(updated_user));
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   }
 );
-
-users.put("/update-profile", authenticateUser, upload.single('profilePicture'), async (req, res) => {
-  try {
-    const profile_picture = req.file;
-    const updated_user = await updateProfile(req.session.userId, req.body, profile_picture);
-    res.status(200).json(camelizeKeys(updated_user));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 users.post("/delete-user", authenticateUser, async (req, res) => {
   try {
@@ -279,15 +276,26 @@ users.get("/become-instructor-check", authenticateUser, async (req, res) => {
   }
 });
 
-users.post("/finish-instructor-signup", authenticateUser, upload.single('profilePicture'), async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const profile_picture = req.file.profilePicture ? req.file.profilePicture[0] : null;
-    const user = await finishInstructorSignup(userId, decamelizeKeys(req.body), profile_picture);
-    res.status(200).json(camelizeKeys(user));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+users.post(
+  "/finish-instructor-signup",
+  authenticateUser,
+  upload.single("profilePicture"),
+  async (req, res) => {
+    try {
+      const { userId } = req.session;
+      const profile_picture = req.file.profilePicture
+        ? req.file.profilePicture[0]
+        : null;
+      const user = await finishInstructorSignup(
+        userId,
+        decamelizeKeys(req.body),
+        profile_picture
+      );
+      res.status(200).json(camelizeKeys(user));
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 module.exports = users;

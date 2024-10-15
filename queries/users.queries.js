@@ -67,13 +67,13 @@ const userSignup = async (user, profile_picture) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const hashedSecurityAnswer = await bcrypt.hash(security_answer, 10);
-    const { user_id } = await db.one(
+    const user = await db.one(
       `
       INSERT INTO users
       (first_name, middle_name, last_name, username, birth_date, email, password, security_question, security_answer, is_instructor, github, gitlab, linkedin, youtube, bio, profile_picture)
       VALUES
       ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-      RETURNING user_id
+      RETURNING user_id, is_instructor
       `,
       [
         first_name,
@@ -109,7 +109,7 @@ const userSignup = async (user, profile_picture) => {
         )
       );
     }
-    return user_id;
+    return user;
   } catch (error) {
     throw error;
   }
@@ -301,6 +301,7 @@ const resetPassword = async (email, newPassword) => {
 
 const getUserClasses = async (id) => {
   try {
+    await db.none("SET TIMEZONE = 'America/New_York';");
     const classes_info_bulk = await db.any(
       `
       SELECT class_dates.*, classes.*
