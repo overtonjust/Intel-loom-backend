@@ -7,7 +7,7 @@ const {
   deleteInstructorLinks,
   getInstructorClasses,
   getInstructorClassTemplates,
-  getInstructorClassById,
+  getInstructorClassTemplateById,
   instructorClassRecordings,
 } = require("../queries/instructors.queries.js");
 
@@ -56,7 +56,7 @@ instructors.get(
   async (req, res) => {
     try {
       const { classId } = req.params;
-      const classInfo = await getInstructorClassById(classId);
+      const classInfo = await getInstructorClassTemplateById(classId);
       res.status(200).json(camelizeKeys(classInfo));
     } catch (error) {
       res.status(404).json({ error: error.message });

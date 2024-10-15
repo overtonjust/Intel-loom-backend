@@ -141,6 +141,7 @@ const getInstructorClassTemplateById = async (id) => {
       "SELECT * FROM classes WHERE classes.class_id = $1",
       id
     );
+    delete class_info_bulk.room_id;
     const class_dates = await db.any(
       `
       SELECT class_dates.*
