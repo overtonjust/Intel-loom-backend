@@ -1,15 +1,11 @@
 const db = require("../db/dbConfig.js");
-const axios = require('axios');
-require('dotenv').config();
+const axios = require("axios");
+require("dotenv").config();
 const msURL = process.env.MS_URL;
 const msAccess = process.env.MS_APP_ACCESS_KEY;
 const msSecret = process.env.MS_APP_SECRET;
 const msToken = process.env.MS_TOKEN;
-const {
-  getSignedUrlFromS3,
-  deleteFromS3,
-  addToS3,
-} = require("../aws/s3.commands.js");
+const { getSignedUrlFromS3, addToS3 } = require("../aws/s3.commands.js");
 
 const getAllClasses = async (page = 1, user_id) => {
   try {
@@ -238,13 +234,7 @@ const createClassTemplate = async (
       VALUES ($1, $2, $3, $4, $5)
       RETURNING class_id
       `,
-      [
-        instructor_id,
-        title,
-        description,
-        price,
-        capacity,
-      ]
+      [instructor_id, title, description, price, capacity]
     );
     if (class_pictures.length) {
       await Promise.all(
@@ -261,111 +251,24 @@ const createClassTemplate = async (
         })
       );
     }
-    const { data: {id} } = await axios.post(`${msURL}/rooms`, {name: title}, {
-      headers: {
-        'APP_ACCESS_KEY': msAccess,
-        'APP_SECRET': msSecret,
-        'Authorization': `Bearer ${msToken}`
+    const {
+      data: { id },
+    } = await axios.post(
+      `${msURL}/rooms`,
+      { name: title },
+      {
+        headers: {
+          APP_ACCESS_KEY: msAccess,
+          APP_SECRET: msSecret,
+          Authorization: `Bearer ${msToken}`,
+        },
       }
-    })
-    await db.none('UPDATE classes SET room_id = $1 WHERE class_id = $2', [id, class_id]);
+    );
+    await db.none("UPDATE classes SET room_id = $1 WHERE class_id = $2", [
+      id,
+      class_id,
+    ]);
     return class_id;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const deleteClassTemplate = async (class_id) => {
-  try {
-    const class_pictures = await db.any(
-      `
-      SELECT picture_key
-      FROM class_pictures
-      WHERE class_id = $1
-      `,
-      class_id
-    );
-    if (class_pictures.length) {
-      await Promise.all(
-        class_pictures.map(async ({ picture_key }) => {
-          await deleteFromS3(picture_key);
-        })
-      );
-    }
-    await db.none(
-      `
-      DELETE FROM classes
-      WHERE class_id = $1
-      `,
-      class_id
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
-const updateClassTemplate = async (class_id, classInfo) => {
-  try {
-    const { title, description, price, capacity } = classInfo;
-    await db.none(
-      `
-      UPDATE classes
-      SET title = $1, description = $2, price = $3, capacity = $4
-      WHERE class_id = $5
-      `,
-      [title, description, price, capacity, class_id]
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
-const updateClassPictures = async (
-  class_id,
-  class_pictures,
-  remove_selected,
-  highlight_picture
-) => {
-  try {
-    if (remove_selected.length) {
-      await Promise.all(
-        remove_selected.map(async (picture_key) => {
-          await deleteFromS3(picture_key);
-          await db.none(
-            `
-            DELETE FROM class_pictures
-            WHERE picture_key = $1
-            `,
-            picture_key
-          );
-        })
-      );
-    }
-    if (class_pictures.length) {
-      await Promise.all(
-        class_pictures.map(async (picture) => {
-          const picture_key = await addToS3(picture);
-          await db.none(
-            `
-            INSERT INTO class_pictures (class_id, picture_key)
-            VALUES ($1, $2)
-            `,
-            [class_id, picture_key]
-          );
-        })
-      );
-    }
-    if (highlight_picture) {
-      const highlight_picture_key = await addToS3(highlight_picture);
-      await db.none(
-        `
-        UPDATE classes
-        SET highlight_picture = $1
-        WHERE class_id = $2
-        `,
-        [highlight_picture_key, class_id]
-      );
-    }
   } catch (error) {
     throw error;
   }
@@ -383,37 +286,6 @@ const addClassDate = async (class_id, class_dates) => {
       [class_id, class_start, class_end]
     );
     return class_date;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const editClassDate = async (class_date_id, class_dates) => {
-  try {
-    const { class_start, class_end } = class_dates;
-    await db.none("SET TIMEZONE = 'America/New_York';");
-    const updated_date = await db.one(
-      `
-      UPDATE class_dates SET class_start = $1, class_end = $2
-      WHERE class_date_id = $3 RETURNING *
-      `,
-      [class_start, class_end, class_date_id]
-    );
-    return updated_date;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const deleteClassDate = async (class_date_id) => {
-  try {
-    await db.none(
-      `
-      DELETE FROM class_dates
-      WHERE class_date_id = $1
-      `,
-      class_date_id
-    );
   } catch (error) {
     throw error;
   }
@@ -452,24 +324,32 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
       SELECT instructor_id, room_id
       FROM classes
       WHERE class_id = $1
-      `, class_id
+      `,
+      class_id
     );
     const { first_name, last_name } = await db.oneOrNone(
       `
       SELECT first_name, last_name
       FROM users
       WHERE user_id = $1
-      `, user_id
+      `,
+      user_id
     );
-    const user_role = instructor_id === Number(user_id) ? 'host' : 'guest';
-    const { data: {code} } = await axios.post(`${msURL}/room-codes/room/${room_id}/role/${user_role}`, {}, {
-      headers: {
-        'APP_ACCESS_KEY': msAccess,
-        'APP_SECRET': msSecret,
-        'Authorization': `Bearer ${msToken}`
+    const user_role = instructor_id === Number(user_id) ? "host" : "guest";
+    const {
+      data: { code },
+    } = await axios.post(
+      `${msURL}/room-codes/room/${room_id}/role/${user_role}`,
+      {},
+      {
+        headers: {
+          APP_ACCESS_KEY: msAccess,
+          APP_SECRET: msSecret,
+          Authorization: `Bearer ${msToken}`,
+        },
       }
-    })
-    return {first_name, last_name, roomCode: code};
+    );
+    return { first_name, last_name, roomCode: code };
   } catch (error) {
     throw error;
   }
@@ -480,12 +360,7 @@ module.exports = {
   getClassById,
   getClassDateInfo,
   createClassTemplate,
-  deleteClassTemplate,
-  updateClassTemplate,
-  updateClassPictures,
   addClassDate,
-  editClassDate,
-  deleteClassDate,
   addClassRecording,
   getRoomCodeWithUser,
 };

@@ -2,47 +2,6 @@ const db = require("../db/dbConfig.js");
 const { getSignedUrlFromS3 } = require("../aws/s3.commands.js");
 const { format_date } = require("../utils.js");
 
-const addInstructorLinks = async (instructor_id, instructor_links) => {
-  try {
-    await Promise.all(
-      instructor_links.map(
-        async (link) =>
-          await db.none(
-            `
-          INSERT INTO instructor_links
-          (instructor_id, link)
-          VALUES
-          ($1, $2)
-          `,
-            [instructor_id, link]
-          )
-      )
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
-const deleteInstructorLinks = async (instructor_id, remove_links) => {
-  try {
-    await Promise.all(
-      remove_links.map(
-        async (link) =>
-          await db.none(
-            `
-          DELETE FROM instructor_links
-          WHERE instructor_id = $1
-          AND link = $2
-          `,
-            [instructor_id, link]
-          )
-      )
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
 const getInstructorClasses = async (id) => {
   try {
     await db.none("SET TIMEZONE = 'America/New_York';");
@@ -204,8 +163,6 @@ const instructorClassRecordings = async (id) => {
 };
 
 module.exports = {
-  addInstructorLinks,
-  deleteInstructorLinks,
   getInstructorClasses,
   getInstructorClassTemplates,
   getInstructorClassTemplateById,

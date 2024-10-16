@@ -10,22 +10,13 @@ const {
   userLogin,
   userSignup,
   userInfo,
-  updateProfile,
-  userDelete,
-  changePassword,
-  getSecurityQuestion,
-  checkSecurityAnswer,
-  resetPassword,
   getUserClasses,
   getUserBookmarks,
   addBookmark,
   removeBookmark,
   userClassRecordings,
   bookClass,
-  cancelBooking,
   addInstructorReview,
-  becomeInstructorCheck,
-  finishInstructorSignup,
 } = require("../queries/users.queries.js");
 
 users.post("/validate-password", (req, res) => {
@@ -75,87 +66,6 @@ users.post("/register", upload.single("profilePicture"), async (req, res) => {
     req.session.userId = user_id;
     req.session.loggedIn = true;
     res.status(200).json(camelizeKeys(user));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.post("/register", upload.single("profilePicture"), async (req, res) => {
-  try {
-    const profile_picture = req.file;
-    const user = await userSignup(decamelizeKeys(req.body), profile_picture);
-    req.session.userId = user_id;
-    req.session.loggedIn = true;
-    res.status(200).json(camelizeKeys(user));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.put(
-  "/update-profile",
-  authenticateUser,
-  upload.single("profilePicture"),
-  async (req, res) => {
-    try {
-      const profile_picture = req.file;
-      const updated_user = await updateProfile(
-        req.session.userId,
-        req.body,
-        profile_picture
-      );
-      res.status(200).json(camelizeKeys(updated_user));
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-);
-
-users.post("/delete-user", authenticateUser, async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    await userDelete(email, password);
-    res.status(200).json("User deleted successfully.");
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.put("/change-password", authenticateUser, async (req, res) => {
-  try {
-    const { email, password, newPassword } = req.body;
-    await changePassword(email, password, newPassword);
-    res.status(200).json("Password changed successfully.");
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.post("/get-security-question", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const securityQuestion = await getSecurityQuestion(email);
-    res.status(200).json(securityQuestion);
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-users.post("/check-security-answer", async (req, res) => {
-  try {
-    const { email, securityAnswer } = req.body;
-    await checkSecurityAnswer(email, securityAnswer);
-    res.status(200).json("Security answer is correct.");
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-users.put("/reset-password", async (req, res) => {
-  try {
-    const { email, newPassword } = req.body;
-    await resetPassword(email, newPassword);
-    res.status(200).json("Password reset successfully.");
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -256,17 +166,6 @@ users.post("/book-class", authenticateUser, async (req, res) => {
   }
 });
 
-users.post("/cancel-booking", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const { classDateId } = req.body;
-    await cancelBooking(userId, classDateId);
-    res.status(200).json("Booking cancelled successfully.");
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 users.post("/add-instructor-review", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.session;
@@ -277,58 +176,5 @@ users.post("/add-instructor-review", authenticateUser, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-users.get("/become-instructor-check", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const user = await becomeInstructorCheck(userId);
-    res.status(200).json(camelizeKeys(user));
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-users.post(
-  "/finish-instructor-signup",
-  authenticateUser,
-  upload.single("profilePicture"),
-  async (req, res) => {
-    try {
-      const { userId } = req.session;
-      const profile_picture = req.file.profilePicture
-        ? req.file.profilePicture[0]
-        : null;
-      const user = await finishInstructorSignup(
-        userId,
-        decamelizeKeys(req.body),
-        profile_picture
-      );
-      res.status(200).json(camelizeKeys(user));
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-);
-users.post(
-  "/finish-instructor-signup",
-  authenticateUser,
-  upload.single("profilePicture"),
-  async (req, res) => {
-    try {
-      const { userId } = req.session;
-      const profile_picture = req.file.profilePicture
-        ? req.file.profilePicture[0]
-        : null;
-      const user = await finishInstructorSignup(
-        userId,
-        decamelizeKeys(req.body),
-        profile_picture
-      );
-      res.status(200).json(camelizeKeys(user));
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  }
-);
 
 module.exports = users;

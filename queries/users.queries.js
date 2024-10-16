@@ -1,7 +1,6 @@
 const db = require("../db/dbConfig.js");
 const {
   getSignedUrlFromS3,
-  deleteFromS3,
   addToS3,
 } = require("../aws/s3.commands.js");
 const { format_date, format_recording_date } = require("../utils.js");
@@ -150,150 +149,6 @@ const userInfo = async (id) => {
     ).toFixed(2);
     user.rating = Number(average_rating) > 0 ? average_rating : null;
     return { ...user, instructor_links, instructor_reviews };
-  } catch (error) {
-    throw error;
-  }
-};
-
-const updateProfile = async (user_id, user, new_profile_picture) => {
-  try {
-    const { bio, github, gitlab, linkedin, youtube } = user;
-    if (new_profile_picture) {
-      const old_profile_picture = await db.one(
-        "SELECT profile_picture FROM users WHERE user_id = $1",
-        user_id
-      );
-      if (old_profile_picture.profile_picture)
-        await deleteFromS3(old_profile_picture.profile_picture);
-      const new_profile_picture_key = await addToS3(new_profile_picture);
-      await db.none(
-        "UPDATE users SET profile_picture = $1 WHERE user_id = $2",
-        [new_profile_picture_key, user_id]
-      );
-    }
-    await db.none(
-      `
-      UPDATE users
-      SET bio = $1, github = $2, gitlab = $3, linkedin = $4, youtube = $5
-      WHERE user_id = $6
-      `,
-      [bio, github, gitlab, linkedin, youtube, user_id]
-    );
-    const updated_user = await userInfo(user_id);
-    return updated_user;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const userDelete = async (email, password) => {
-  try {
-    const user = await db.oneOrNone(
-      "SELECT user_id, profile_picture, password FROM users WHERE email = $1",
-      email
-    );
-    if (!user) throw new Error("Invalid Credentials");
-    const passwordMatched = await bcrypt.compare(password, user.password);
-    if (!passwordMatched) throw new Error("Invalid Credentials");
-    const instructor_classes = await db.any(
-      "SELECT class_id FROM classes WHERE instructor_id = $1",
-      user.user_id
-    );
-    const instructor_recordings = await db.any(
-      `
-      SELECT class_recordings.recording_key
-      FROM instructor_class_recordings
-      JOIN class_recordings ON instructor_class_recordings.class_recording_id = class_recordings.class_recording_id
-      WHERE instructor_class_recordings.instructor_id = $1
-      `,
-      user.user_id
-    );
-    if (user.profile_picture) await deleteFromS3(user.profile_picture);
-    if (instructor_classes.length) {
-      await Promise.all(
-        instructor_classes.map(async ({ class_id }) => {
-          const class_pictures = await db.any(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1",
-            class_id
-          );
-          if (class_pictures.length)
-            await Promise.all(
-              class_pictures.map(
-                async ({ picture_key }) => await deleteFromS3(picture_key)
-              )
-            );
-        })
-      );
-    }
-    if (instructor_recordings.length) {
-      await Promise.all(
-        instructor_recordings.map(
-          async ({ recording_key }) => await deleteFromS3(recording_key)
-        )
-      );
-    }
-    await db.none("DELETE FROM users WHERE email = $1", email);
-  } catch (error) {
-    throw error;
-  }
-};
-
-const changePassword = async (email, password, newPassword) => {
-  try {
-    const user = await db.oneOrNone(
-      "SELECT password FROM users WHERE email = $1",
-      email
-    );
-    if (!user) throw new Error("Invalid Credentials");
-    const passwordMatched = await bcrypt.compare(password, user.password);
-    if (!passwordMatched) throw new Error("Invalid Credentials");
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.none("UPDATE users SET password = $1 WHERE email = $2", [
-      hashedPassword,
-      email,
-    ]);
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getSecurityQuestion = async (email) => {
-  try {
-    const user = await db.oneOrNone(
-      "SELECT security_question FROM users WHERE email = $1",
-      email
-    );
-    if (!user) throw new Error("User not found");
-    return user.security_question;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const checkSecurityAnswer = async (email, security_answer) => {
-  try {
-    const user = await db.oneOrNone(
-      "SELECT security_answer FROM users WHERE email = $1",
-      email
-    );
-    if (!user) throw new Error("User not found");
-    const securityAnswerMatched = await bcrypt.compare(
-      security_answer,
-      user.security_answer
-    );
-    if (!securityAnswerMatched) throw new Error("Invalid Credentials");
-  } catch (error) {
-    throw error;
-  }
-};
-
-const resetPassword = async (email, newPassword) => {
-  try {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.none("UPDATE users SET password = $1 WHERE email = $2", [
-      hashedPassword,
-      email,
-    ]);
   } catch (error) {
     throw error;
   }
@@ -489,21 +344,6 @@ const bookClass = async (user_id, class_date_id) => {
   }
 };
 
-const cancelBooking = async (user_id, class_date_id) => {
-  try {
-    await db.none(
-      `
-      DELETE FROM booked_classes
-      WHERE user_id = $1
-      AND class_date_id = $2
-      `,
-      [user_id, class_date_id]
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
 const addInstructorReview = async (user_id, instructor_id, review, rating) => {
   try {
     await db.none(
@@ -519,89 +359,17 @@ const addInstructorReview = async (user_id, instructor_id, review, rating) => {
   }
 };
 
-const becomeInstructorCheck = async (id) => {
-  try {
-    const user = await db.one(
-      `
-      SELECT profile_picture, bio, linkedin
-      FROM users
-      WHERE user_id = $1
-      `,
-      id
-    );
-    if (user.profile_picture)
-      user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
-    return user;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const finishInstructorSignup = async (id, user, new_profile_picture) => {
-  try {
-    const { bio, linkedin, instructor_links } = user;
-    if (new_profile_picture) {
-      const old_profile_picture = await db.one(
-        "SELECT profile_picture FROM users WHERE user_id = $1",
-        id
-      );
-      if (old_profile_picture.profile_picture)
-        await deleteFromS3(old_profile_picture.profile_picture);
-      const new_profile_picture_key = await addToS3(new_profile_picture);
-      await db.none(
-        "UPDATE users SET profile_picture = $1 WHERE user_id = $2",
-        [new_profile_picture_key, id]
-      );
-    }
-    if (instructor_links?.length) {
-      await Promise.all(
-        instructor_links.map(async (link) =>
-          db.none(
-            `
-              INSERT INTO instructor_links
-              (instructor_id, link)
-              VALUES
-              ($1, $2)
-              `,
-            [id, link]
-          )
-        )
-      );
-    }
-    await db.none(
-      `
-      UPDATE users
-      SET bio = $1, linkedin = $2
-      WHERE user_id = $3
-      `,
-      [bio, linkedin, id]
-    );
-    return await userInfo(id);
-  } catch (error) {
-    throw error;
-  }
-};
-
 module.exports = {
   itsNewUsername,
   itsNewEmail,
   userLogin,
   userSignup,
   userInfo,
-  updateProfile,
-  userDelete,
-  changePassword,
-  getSecurityQuestion,
-  checkSecurityAnswer,
-  resetPassword,
   getUserClasses,
   getUserBookmarks,
   addBookmark,
   removeBookmark,
   userClassRecordings,
   bookClass,
-  cancelBooking,
   addInstructorReview,
-  becomeInstructorCheck,
-  finishInstructorSignup,
 };
