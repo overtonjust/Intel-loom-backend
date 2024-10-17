@@ -2,55 +2,15 @@ const db = require("../db/dbConfig.js");
 const { getSignedUrlFromS3 } = require("../aws/s3.commands.js");
 const { format_date } = require("../utils.js");
 
-const addInstructorLinks = async (instructor_id, instructor_links) => {
-  try {
-    await Promise.all(
-      instructor_links.map(
-        async (link) =>
-          await db.none(
-            `
-          INSERT INTO instructor_links
-          (instructor_id, link)
-          VALUES
-          ($1, $2)
-          `,
-            [instructor_id, link]
-          )
-      )
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
-const deleteInstructorLinks = async (instructor_id, remove_links) => {
-  try {
-    await Promise.all(
-      remove_links.map(
-        async (link) =>
-          await db.none(
-            `
-          DELETE FROM instructor_links
-          WHERE instructor_id = $1
-          AND link = $2
-          `,
-            [instructor_id, link]
-          )
-      )
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
 const getInstructorClasses = async (id) => {
   try {
     await db.none("SET TIMEZONE = 'America/New_York';");
     const classes_info_bulk = await db.any(
       `
-      SELECT classes.*, class_dates.*
+      SELECT classes.class_id, classes.title, classes.price, class_dates.class_date_id, class_dates.class_start, class_dates.class_end, class_pictures.picture_key
       FROM classes
       JOIN class_dates ON classes.class_id = class_dates.class_id
+      JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE classes.instructor_id = $1
       AND class_dates.class_start >= (NOW() - INTERVAL '1 HOUR') AT TIME ZONE 'America/New_York'
       `,
@@ -60,28 +20,23 @@ const getInstructorClasses = async (id) => {
     const class_map = new Map();
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
-        if (!class_map.has(classInfo.class_id)) {
-          const getHighlightPicture = await db.one(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-            classInfo.class_id
-          );
-          const signed_url = await getSignedUrlFromS3(
-            getHighlightPicture.picture_key
-          );
-          class_map.set(classInfo.class_id, {
-            class_id: classInfo.class_id,
-            title: classInfo.title,
+        const { class_id, title, price, picture_key } = classInfo;
+        if (!class_map.has(class_id)) {
+          const signed_url = await getSignedUrlFromS3(picture_key);
+          class_map.set(class_id, {
+            class_id,
+            title,
             highlight_picture: signed_url,
-            price: classInfo.price,
+            price,
           });
         }
       })
     );
-    const formatted_class_info = classes_info_bulk.map((classInfo) => ({
-      class_date_id: classInfo.class_date_id,
-      class_start: classInfo.class_start,
-      class_end: classInfo.class_end,
-      class_info: class_map.get(classInfo.class_id),
+    const formatted_class_info = classes_info_bulk.map(({class_date_id, class_start, class_end, class_id}) => ({
+      class_date_id,
+      class_start,
+      class_end,
+      class_info: class_map.get(class_id),
     }));
     const classes_by_date = formatted_class_info.reduce((objAcc, classInfo) => {
       const class_date = format_date(classInfo.class_start);
@@ -108,8 +63,9 @@ const getInstructorClassTemplates = async (id) => {
   try {
     let class_templates = await db.any(
       `
-      SELECT classes.class_id, classes.title
-      FROM classes 
+      SELECT classes.class_id, classes.title, class_pictures.picture_key
+      FROM classes
+      JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE instructor_id = $1
       `,
       id
@@ -117,13 +73,10 @@ const getInstructorClassTemplates = async (id) => {
     if (class_templates.length) {
       class_templates = await Promise.all(
         class_templates.map(async (class_template) => {
-          const getHighlightPicture = await db.one(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-            class_template.class_id
-          );
           class_template.highlight_picture = await getSignedUrlFromS3(
-            getHighlightPicture.picture_key
+            class_template.picture_key
           );
+          delete class_template.picture_key;
           return class_template;
         })
       );
@@ -138,13 +91,12 @@ const getInstructorClassTemplateById = async (id) => {
   try {
     await db.none("SET TIMEZONE = 'America/New_York';");
     const class_info_bulk = await db.oneOrNone(
-      "SELECT * FROM classes WHERE classes.class_id = $1",
+      "SELECT class_id, title, description, price, capacity FROM classes WHERE classes.class_id = $1",
       id
     );
-    delete class_info_bulk.room_id;
     const class_dates = await db.any(
       `
-      SELECT class_dates.*
+      SELECT class_date_id, class_start, class_end
       FROM class_dates
       WHERE class_dates.class_id = $1
       AND class_dates.class_start >= NOW()
@@ -191,11 +143,14 @@ const instructorClassRecordings = async (id) => {
     );
     if (!recordings.length) return [];
     const formatted_recordings = await Promise.all(
-      recordings.map(async (recording) => ({
-        class_date: format_recording_date(recording.class_start),
-        title: recording.title,
-        recording_key: await getSignedUrlFromS3(recording.recording_key),
-      }))
+      recordings.map(async ({class_start, title, recording_key}) => {
+        const signed_url = await getSignedUrlFromS3(recording_key);
+        return {
+          class_date: format_date(class_start),
+          title,
+          recording_key: signed_url,
+        };
+      })
     );
     return formatted_recordings;
   } catch (error) {
@@ -204,8 +159,6 @@ const instructorClassRecordings = async (id) => {
 };
 
 module.exports = {
-  addInstructorLinks,
-  deleteInstructorLinks,
   getInstructorClasses,
   getInstructorClassTemplates,
   getInstructorClassTemplateById,
