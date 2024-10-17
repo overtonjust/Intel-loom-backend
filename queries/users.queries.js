@@ -166,22 +166,23 @@ const getUserClasses = async (id) => {
     const class_map = new Map();
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
-        if (!class_map.has(classInfo.class_id)) {
-          const signed_url = await getSignedUrlFromS3(classInfo.picture_key);
-          class_map.set(classInfo.class_id, {
-            class_id: classInfo.class_id,
-            title: classInfo.title,
+        const { class_id, title, price, picture_key } = classInfo;
+        if (!class_map.has(class_id)) {
+          const signed_url = await getSignedUrlFromS3(picture_key);
+          class_map.set(class_id, {
+            class_id,
+            title,
             highlight_picture: signed_url,
-            price: classInfo.price,
+            price,
           });
         }
       })
     );
-    const formatted_class_info = classes_info_bulk.map((classInfo) => ({
-      class_date_id: classInfo.class_date_id,
-      class_start: classInfo.class_start,
-      class_end: classInfo.class_end,
-      class_info: class_map.get(classInfo.class_id),
+    const formatted_class_info = classes_info_bulk.map(({class_date_id, class_start, class_end, class_id}) => ({
+      class_date_id,
+      class_start,
+      class_end,
+      class_info: class_map.get(class_id),
     }));
     const classes_by_date = formatted_class_info.reduce((objAcc, classInfo) => {
       const class_date = format_date(classInfo.class_start);
@@ -219,11 +220,10 @@ const userClassRecordings = async (id) => {
     );
     if (!recordings.length) return [];
     const formatted_recordings = await Promise.all(
-      recordings.map(async (recording) => ({
-        class_date: format_recording_date(recording.class_start),
-        title: recording.title,
-        recording_key: await getSignedUrlFromS3(recording.recording_key),
-      }))
+      recordings.map(async ({recording_key, class_start, title }) => {
+        const signed_url = await getSignedUrlFromS3(recording_key);
+        return { class_date: format_recording_date(class_start), title, recording_key: signed_url };
+      })
     );
     return formatted_recordings;
   } catch (error) {
