@@ -5,7 +5,7 @@ const format_date = (date) => {
 };
 
 const format_recording_date = (date) => {
-  const formatter = new Intl.DateTimeFormat("en-US", {dateStyle: 'long'});
+  const formatter = new Intl.DateTimeFormat("en-US", { dateStyle: "long" });
   return formatter.format(new Date(date));
 };
 

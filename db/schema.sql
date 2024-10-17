@@ -57,7 +57,6 @@ CREATE TABLE class_dates (
   class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
   class_start TIMESTAMPTZ NOT NULL,
   class_end TIMESTAMPTZ NOT NULL,
-  students INTEGER DEFAULT 0
 );
 
 CREATE TABLE class_pictures (
@@ -85,10 +84,5 @@ CREATE TABLE instructor_class_recordings (
 
 CREATE TABLE booked_classes (
   class_date_id INTEGER REFERENCES class_dates(class_date_id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
-);
-
-CREATE TABLE bookmarked_classes (
-  class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
 );

@@ -23,4 +23,4 @@ const db = pgp(cn);
   })
   .catch(error => console.log('database connection error', error)); */
 
-module.exports = db
+module.exports = db;
