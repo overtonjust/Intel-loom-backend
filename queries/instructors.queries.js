@@ -7,9 +7,10 @@ const getInstructorClasses = async (id) => {
     await db.none("SET TIMEZONE = 'America/New_York';");
     const classes_info_bulk = await db.any(
       `
-      SELECT classes.*, class_dates.*
+      SELECT classes.class_id, classes.title, classes.price, class_dates.class_date_id, class_dates.class_start, class_dates.class_end, class_pictures.picture_key
       FROM classes
       JOIN class_dates ON classes.class_id = class_dates.class_id
+      JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE classes.instructor_id = $1
       AND class_dates.class_start >= (NOW() - INTERVAL '1 HOUR') AT TIME ZONE 'America/New_York'
       `,
@@ -20,13 +21,7 @@ const getInstructorClasses = async (id) => {
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
         if (!class_map.has(classInfo.class_id)) {
-          const getHighlightPicture = await db.one(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-            classInfo.class_id
-          );
-          const signed_url = await getSignedUrlFromS3(
-            getHighlightPicture.picture_key
-          );
+          const signed_url = await getSignedUrlFromS3(classInfo.picture_key);
           class_map.set(classInfo.class_id, {
             class_id: classInfo.class_id,
             title: classInfo.title,
@@ -67,8 +62,9 @@ const getInstructorClassTemplates = async (id) => {
   try {
     let class_templates = await db.any(
       `
-      SELECT classes.class_id, classes.title
-      FROM classes 
+      SELECT classes.class_id, classes.title, class_pictures.picture_key
+      FROM classes
+      JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE instructor_id = $1
       `,
       id
@@ -76,12 +72,8 @@ const getInstructorClassTemplates = async (id) => {
     if (class_templates.length) {
       class_templates = await Promise.all(
         class_templates.map(async (class_template) => {
-          const getHighlightPicture = await db.one(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-            class_template.class_id
-          );
           class_template.highlight_picture = await getSignedUrlFromS3(
-            getHighlightPicture.picture_key
+            class_template.picture_key
           );
           return class_template;
         })
@@ -97,13 +89,12 @@ const getInstructorClassTemplateById = async (id) => {
   try {
     await db.none("SET TIMEZONE = 'America/New_York';");
     const class_info_bulk = await db.oneOrNone(
-      "SELECT * FROM classes WHERE classes.class_id = $1",
+      "SELECT class_id, title, description, price, capacity FROM classes WHERE classes.class_id = $1",
       id
     );
-    delete class_info_bulk.room_id;
     const class_dates = await db.any(
       `
-      SELECT class_dates.*
+      SELECT class_date_id, class_start, class_end
       FROM class_dates
       WHERE class_dates.class_id = $1
       AND class_dates.class_start >= NOW()
