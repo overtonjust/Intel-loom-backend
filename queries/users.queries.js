@@ -1,8 +1,5 @@
 const db = require("../db/dbConfig.js");
-const {
-  getSignedUrlFromS3,
-  addToS3,
-} = require("../aws/s3.commands.js");
+const { getSignedUrlFromS3, addToS3 } = require("../aws/s3.commands.js");
 const { format_date, format_recording_date } = require("../utils.js");
 const bcrypt = require("bcrypt");
 
@@ -44,15 +41,15 @@ const userSignup = async (user, profile_picture) => {
       first_name,
       middle_name,
       last_name,
-      username,
       birth_date,
+      username,
       email,
       password,
       security_question,
       security_answer,
       is_instructor,
       github,
-      gitlab,
+      hitlab,
       linkedin,
       youtube,
       bio,
@@ -60,16 +57,18 @@ const userSignup = async (user, profile_picture) => {
     } = user;
     let profile_picture_key = null;
     try {
-      if (profile_picture) profile_picture_key = await addToS3(profile_picture);
+      if (profile_picture) {
+        profile_picture_key = await addToS3(profile_picture);
+      }
     } catch (error) {
-      throw new Error("Problem uploading profile picture");
+      throw new Error("Error uploading profile picture");
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const hashedSecurityAnswer = await bcrypt.hash(security_answer, 10);
-    const user = await db.one(
+    const new_user = await db.one(
       `
       INSERT INTO users
-      (first_name, middle_name, last_name, username, birth_date, email, password, security_question, security_answer, is_instructor, github, gitlab, linkedin, youtube, bio, profile_picture)
+      (first_name, middle_name, last_name, birth_date, username, email, password, security_question, security_answer, is_instructor, profile_picture, github, hitlab, linkedin, youtube, bio)
       VALUES
       ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING user_id, is_instructor
@@ -78,37 +77,32 @@ const userSignup = async (user, profile_picture) => {
         first_name,
         middle_name,
         last_name,
-        username,
         birth_date,
+        username,
         email,
         hashedPassword,
         security_question,
         hashedSecurityAnswer,
         is_instructor,
+        profile_picture_key,
         github,
-        gitlab,
+        hitlab,
         linkedin,
         youtube,
         bio,
-        profile_picture_key,
       ]
     );
-    if (instructor_links?.length) {
+    if (instructor_links.length) {
       await Promise.all(
-        instructor_links.map(async (link) =>
-          db.none(
-            `
-              INSERT INTO instructor_links
-              (instructor_id, link)
-              VALUES
-              ($1, $2)
-              `,
-            [user_id, link]
-          )
-        )
+        instructor_links.map(async (link) => {
+          await db.none(
+            "INSERT INTO instructor_links (instructor_id, link) VALUES ($1, $2)",
+            [new_user.user_id, link]
+          );
+        })
       );
     }
-    return user;
+    return new_user;
   } catch (error) {
     throw error;
   }
@@ -117,15 +111,14 @@ const userSignup = async (user, profile_picture) => {
 const userInfo = async (id) => {
   try {
     const user = await db.oneOrNone(
-      "SELECT * FROM users WHERE user_id = $1",
+      "SELECT first_name, middle_name, last_name, bio, email, is_instructor, profile_picture, github, gitlab, linkedin, youtube FROM users WHERE user_id = $1",
       id
     );
     if (!user) throw new Error("User not found");
-    delete user.password;
-    delete user.security_question;
-    delete user.security_answer;
-    const signed_url = await getSignedUrlFromS3(user.profile_picture);
-    user.profile_picture = signed_url;
+    if (user.profile_picture) {
+      const signed_url = await getSignedUrlFromS3(user.profile_picture);
+      user.profile_picture = signed_url;
+    }
     const instructor_links = await db.any(
       "SELECT link FROM instructor_links WHERE instructor_id = $1",
       id
@@ -135,7 +128,7 @@ const userInfo = async (id) => {
       SELECT instructor_reviews.review, users.first_name, users.last_name
       FROM instructor_reviews
       JOIN users ON instructor_reviews.user_id = users.user_id
-      WHERE instructor_reviews.instructor_id = $1
+      WHERE instructor_id = $1
       `,
       id
     );
@@ -159,10 +152,11 @@ const getUserClasses = async (id) => {
     await db.none("SET TIMEZONE = 'America/New_York';");
     const classes_info_bulk = await db.any(
       `
-      SELECT class_dates.*, classes.*
+      SELECT class_dates.class_date_id, class_dates.class_start, class_dates.class_end, classes.class_id, classes.title, classes.price, class_pictures.picture_key
       FROM booked_classes
       JOIN class_dates ON booked_classes.class_date_id = class_dates.class_date_id
       JOIN classes ON class_dates.class_id = classes.class_id
+      JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE booked_classes.user_id = $1
       AND class_dates.class_start >= (NOW() - INTERVAL '1 HOUR')
       `,
@@ -172,24 +166,13 @@ const getUserClasses = async (id) => {
     const class_map = new Map();
     await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
-        const check_bookedmarked = await db.oneOrNone(
-          "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
-          [id, classInfo.class_id]
-        );
         if (!class_map.has(classInfo.class_id)) {
-          const getHighlightPicture = await db.one(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-            classInfo.class_id
-          );
-          const signed_url = await getSignedUrlFromS3(
-            getHighlightPicture.picture_key
-          );
+          const signed_url = await getSignedUrlFromS3(classInfo.picture_key);
           class_map.set(classInfo.class_id, {
             class_id: classInfo.class_id,
             title: classInfo.title,
             highlight_picture: signed_url,
             price: classInfo.price,
-            is_bookmarked: check_bookedmarked ? true : false,
           });
         }
       })
@@ -216,86 +199,6 @@ const getUserClasses = async (id) => {
         return objAcc;
       }, {});
     return sorted_classes_by_date;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const getUserBookmarks = async (id) => {
-  try {
-    const bookmarks_info_bulk = await db.any(
-      `
-      SELECT classes.*, users.first_name, users.middle_name, users.last_name
-      FROM bookmarked_classes
-      JOIN classes ON bookmarked_classes.class_id = classes.class_id
-      JOIN users ON classes.instructor_id = users.user_id
-      WHERE bookmarked_classes.user_id = $1
-      `,
-      id
-    );
-    if (!bookmarks_info_bulk.length) return [];
-    const bookmark_map = new Map();
-    await Promise.all(
-      bookmarks_info_bulk.map(async (classInfo) => {
-        if (!bookmark_map.has(classInfo.class_id)) {
-          const getHighlightPicture = await db.one(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-            classInfo.class_id
-          );
-          const signed_url = await getSignedUrlFromS3(
-            getHighlightPicture.picture_key
-          );
-          bookmark_map.set(classInfo.class_id, {
-            instructor: {
-              instructor_id: classInfo.instructor_id,
-              first_name: classInfo.first_name,
-              middle_name: classInfo.middle_name,
-              last_name: classInfo.last_name,
-            },
-            class_id: classInfo.class_id,
-            title: classInfo.title,
-            highlight_picture: signed_url,
-            price: classInfo.price,
-            is_bookmarked: true,
-          });
-        }
-      })
-    );
-    const formatted_bookmark_info = bookmarks_info_bulk.map((classInfo) => ({
-      ...bookmark_map.get(classInfo.class_id),
-    }));
-    return formatted_bookmark_info;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const addBookmark = async (user_id, class_id) => {
-  try {
-    await db.none(
-      `
-      INSERT INTO bookmarked_classes
-      (user_id, class_id)
-      VALUES
-      ($1, $2)
-      `,
-      [user_id, class_id]
-    );
-  } catch (error) {
-    throw error;
-  }
-};
-
-const removeBookmark = async (user_id, class_id) => {
-  try {
-    await db.none(
-      `
-      DELETE FROM bookmarked_classes
-      WHERE user_id = $1
-      AND class_id = $2
-      `,
-      [user_id, class_id]
-    );
   } catch (error) {
     throw error;
   }
@@ -366,9 +269,6 @@ module.exports = {
   userSignup,
   userInfo,
   getUserClasses,
-  getUserBookmarks,
-  addBookmark,
-  removeBookmark,
   userClassRecordings,
   bookClass,
   addInstructorReview,

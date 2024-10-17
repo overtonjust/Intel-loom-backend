@@ -87,8 +87,3 @@ CREATE TABLE booked_classes (
   class_date_id INTEGER REFERENCES class_dates(class_date_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
 );
-
-CREATE TABLE bookmarked_classes (
-  class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
-  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
-);

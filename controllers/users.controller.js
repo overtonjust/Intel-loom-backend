@@ -11,9 +11,6 @@ const {
   userSignup,
   userInfo,
   getUserClasses,
-  getUserBookmarks,
-  addBookmark,
-  removeBookmark,
   userClassRecordings,
   bookClass,
   addInstructorReview,
@@ -103,16 +100,6 @@ users.get("/user-classes", authenticateUser, async (req, res) => {
   }
 });
 
-users.get("/user-bookmarks", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const bookmarks = await getUserBookmarks(userId);
-    res.status(200).json(camelizeKeys(bookmarks));
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
 users.get("/user-class-recordings", authenticateUser, async (req, res) => {
   try {
     const { userId } = req.session;
@@ -130,28 +117,6 @@ users.get("/profile/:userId", authenticateUser, async (req, res) => {
     res.status(200).json(camelizeKeys(user));
   } catch (error) {
     res.status(404).json({ error: error.message });
-  }
-});
-
-users.post("/add-bookmark", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const { classId } = req.body;
-    await addBookmark(userId, classId);
-    res.status(200).json("Bookmark added successfully.");
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-users.post("/remove-bookmark", authenticateUser, async (req, res) => {
-  try {
-    const { userId } = req.session;
-    const { classId } = req.body;
-    await removeBookmark(userId, classId);
-    res.status(200).json("Bookmark removed successfully.");
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 
