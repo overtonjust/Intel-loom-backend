@@ -57,7 +57,6 @@ CREATE TABLE class_dates (
   class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
   class_start TIMESTAMPTZ NOT NULL,
   class_end TIMESTAMPTZ NOT NULL,
-  students INTEGER DEFAULT 0
 );
 
 CREATE TABLE class_pictures (

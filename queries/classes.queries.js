@@ -13,16 +13,19 @@ const getAllClasses = async (page = 1, user_id) => {
     await db.none("SET TIMEZONE = 'America/New_York';");
     const classes_info_bulk = await db.any(
       `
-      SELECT classes.*, users.first_name, users.middle_name, users.last_name, MIN(class_dates.class_start) AS class_start,
-      COUNT(class_dates.class_date_id) AS class_dates_count, COUNT(booked_classes.class_date_id) AS booked_dates_count
+      SELECT classes.class_id, classes.title, classes.price, classes.instructor_id, class_pictures.picture_key, 
+      users.first_name, users.middle_name, users.last_name 
       FROM classes
       JOIN users ON classes.instructor_id = users.user_id
       JOIN class_dates ON classes.class_id = class_dates.class_id
+      JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       LEFT JOIN booked_classes ON class_dates.class_date_id = booked_classes.class_date_id AND booked_classes.user_id = $2
+      LEFT JOIN booked_classes AS students_booked ON class_dates.class_date_id = students_booked.class_date_id
       WHERE class_dates.class_start >= (NOW() + INTERVAL '1 hour')
-      AND class_dates.students < classes.capacity
-      GROUP BY classes.class_id, users.user_id
-      HAVING COUNT(class_dates.class_date_id) > COUNT(booked_classes.class_date_id)
+      GROUP BY classes.class_id, users.user_id, class_pictures.picture_key
+      HAVING 
+        COUNT(class_dates.class_date_id) > COUNT(DISTINCT booked_classes.class_date_id)
+        AND COUNT(DISTINCT students_booked.class_date_id) < classes.capacity
       ORDER BY classes.class_id
       LIMIT 21 OFFSET $1
       `,
@@ -33,28 +36,27 @@ const getAllClasses = async (page = 1, user_id) => {
     if (!classes_info_bulk) return { classes: [], more_classes: false };
     const formatted_class_info = await Promise.all(
       classes_info_bulk.map(async (classInfo) => {
-        const check_bookedmarked = await db.oneOrNone(
-          "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
-          [user_id, classInfo.class_id]
-        );
-        const getHighlightPicture = await db.one(
-          "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-          classInfo.class_id
-        );
-        const signed_url = await getSignedUrlFromS3(
-          getHighlightPicture.picture_key
-        );
+        const {
+          class_id,
+          title,
+          price,
+          instructor_id,
+          first_name,
+          middle_name,
+          last_name,
+          picture_key,
+        } = classInfo;
+        const signed_url = await getSignedUrlFromS3(picture_key);
         return {
-          class_id: classInfo.class_id,
-          title: classInfo.title,
-          price: classInfo.price,
+          class_id,
+          title,
+          price,
           highlight_picture: signed_url,
-          is_bookmarked: check_bookedmarked ? true : false,
           instructor: {
-            instructor_id: classInfo.instructor_id,
-            first_name: classInfo.first_name,
-            middle_name: classInfo.middle_name,
-            last_name: classInfo.last_name,
+            instructor_id,
+            first_name,
+            middle_name,
+            last_name,
           },
         };
       })
@@ -70,93 +72,91 @@ const getClassById = async (id, user_id) => {
     await db.none("SET TIMEZONE = 'America/New_York';");
     const class_info_bulk = await db.oneOrNone(
       `
-      SELECT classes.*, users.first_name, users.middle_name, users.last_name, users.email, users.profile_picture, users.bio
+      SELECT classes.class_id, classes.title, classes.description, classes.price, classes.instructor_id,
+      users.first_name, users.middle_name, users.last_name, users.email, users.profile_picture, users.bio
       FROM classes
       JOIN users ON classes.instructor_id = users.user_id
-      WHERE classes.class_id = $1
+      WHERE class_id = $1
       `,
       id
     );
-    const check_bookmarked = await db.oneOrNone(
-      "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
-      [user_id, id]
-    );
+    const {
+      class_id,
+      title,
+      description,
+      price,
+      instructor_id,
+      first_name,
+      middle_name,
+      last_name,
+      email,
+      profile_picture,
+      bio,
+    } = class_info_bulk;
     const class_dates = await db.any(
       `
-      SELECT class_dates.*
+      SELECT class_dates.class_date_id, class_dates.class_start, class_dates.class_end
       FROM class_dates
       JOIN classes ON class_dates.class_id = classes.class_id
       LEFT JOIN booked_classes ON class_dates.class_date_id = booked_classes.class_date_id
       AND booked_classes.user_id = $2
       WHERE class_dates.class_id = $1
       AND class_dates.class_start >= (NOW() + INTERVAL '1 hour')
-      AND class_dates.students < classes.capacity
       AND booked_classes.class_date_id IS NULL
+      AND (SELECT COUNT(*) FROM booked_classes WHERE class_date_id = class_dates.class_date_id) < classes.capacity
       ORDER BY class_dates.class_start
       `,
       [id, user_id]
     );
     const class_pictures = await db.any(
       `
-      SELECT class_pictures.picture_key
+      SELECT picture_key
       FROM class_pictures
-      WHERE class_pictures.class_id = $1
+      WHERE class_id = $1
       `,
       id
     );
     const more_classes_from_instructor = await db.any(
       `
-      SELECT classes.class_id, classes.title, classes.price
+      SELECT classes.class_id, classes.title, classes.price, class_pictures.picture_key
       FROM classes
+      JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE classes.instructor_id = $1
       AND classes.class_id != $2
       ORDER BY classes.class_id
       `,
-      [class_info_bulk.instructor_id, id]
+      [instructor_id, id]
     );
     if (more_classes_from_instructor.length) {
       await Promise.all(
         more_classes_from_instructor.map(async (classInfo) => {
-          const check_bookmarked = await db.oneOrNone(
-            "SELECT * FROM bookmarked_classes WHERE user_id = $1 AND class_id = $2",
-            [user_id, classInfo.class_id]
-          );
-          classInfo.is_bookmarked = check_bookmarked ? true : false;
-          const getHighlightPicture = await db.one(
-            "SELECT picture_key FROM class_pictures WHERE class_id = $1 AND is_highlight = true",
-            classInfo.class_id
-          );
           classInfo.highlight_picture = await getSignedUrlFromS3(
-            getHighlightPicture.picture_key
+            classInfo.picture_key
           );
+          delete classInfo.picture_key;
         })
       );
     }
-    const profile_picture_signed_url = await getSignedUrlFromS3(
-      class_info_bulk.profile_picture
+    const profile_picture_signed_url =
+      await getSignedUrlFromS3(profile_picture);
+    const class_pictures_signed_urls = await Promise.all(
+      class_pictures.map(
+        async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
+      )
     );
-    let class_pictures_signed_urls = [];
-    if (class_pictures.length) {
-      class_pictures_signed_urls = await Promise.all(
-        class_pictures.map(
-          async ({ picture_key }) => await getSignedUrlFromS3(picture_key)
-        )
-      );
-    }
     const formatted_class_info = {
-      class_id: class_info_bulk.class_id,
-      title: class_info_bulk.title,
-      price: class_info_bulk.price,
-      description: class_info_bulk.description,
-      is_bookmarked: check_bookmarked ? true : false,
+      class_id,
+      title,
+      price,
+      description,
       instructor: {
-        instructor_id: class_info_bulk.instructor_id,
-        first_name: class_info_bulk.first_name,
-        middle_name: class_info_bulk.middle_name,
-        last_name: class_info_bulk.last_name,
-        email: class_info_bulk.email,
+        instructor_id,
+        first_name,
+        middle_name,
+        last_name,
+        email,
         profile_picture: profile_picture_signed_url,
-        bio: class_info_bulk.bio,
+        bio,
       },
       class_dates,
       class_pictures: [...class_pictures_signed_urls],
@@ -197,6 +197,7 @@ const getClassDateInfo = async (class_date_id) => {
       `,
       class_date_id
     );
+    const { class_start, class_end, title, class_id } = class_date_info;
     let class_students = await getClassStudents(class_date_id);
     if (class_students.length) {
       class_students = await Promise.all(
@@ -207,12 +208,12 @@ const getClassDateInfo = async (class_date_id) => {
       );
     }
     const formatted_class_date_info = {
-      class_start: class_date_info.class_start,
-      class_end: class_date_info.class_end,
+      class_start,
+      class_end,
       class_students,
       class_info: {
-        class_id: class_date_info.class_id,
-        title: class_date_info.title,
+        class_id,
+        title,
       },
     };
     return formatted_class_date_info;
