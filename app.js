@@ -7,6 +7,7 @@ require("dotenv").config();
 const usersController = require("./controllers/users.controller.js");
 const instructorsController = require("./controllers/instructors.controller.js");
 const classesController = require("./controllers/classes.controller.js");
+const forumsController = require("./controllers/forums.controller.js");
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use(
 app.use("/users", usersController);
 app.use("/instructors", instructorsController);
 app.use("/classes", classesController);
+app.use("/forums", forumsController);
 
 app.get("/", (req, res) =>
   res.status(200).send("Welcome to Intel Loom's Backend!")
