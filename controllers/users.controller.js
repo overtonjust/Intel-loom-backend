@@ -60,7 +60,7 @@ users.post("/register", upload.single("profilePicture"), async (req, res) => {
   try {
     const profile_picture = req.file;
     const user = await userSignup(decamelizeKeys(req.body), profile_picture);
-    req.session.userId = user_id;
+    req.session.userId = user.user_id;
     req.session.loggedIn = true;
     res.status(200).json(camelizeKeys(user));
   } catch (error) {

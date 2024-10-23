@@ -49,7 +49,7 @@ const userSignup = async (user, profile_picture) => {
       security_answer,
       is_instructor,
       github,
-      hitlab,
+      gitlab,
       linkedin,
       youtube,
       bio,
@@ -68,7 +68,7 @@ const userSignup = async (user, profile_picture) => {
     const new_user = await db.one(
       `
       INSERT INTO users
-      (first_name, middle_name, last_name, birth_date, username, email, password, security_question, security_answer, is_instructor, profile_picture, github, hitlab, linkedin, youtube, bio)
+      (first_name, middle_name, last_name, birth_date, username, email, password, security_question, security_answer, is_instructor, profile_picture, github, gitlab, linkedin, youtube, bio)
       VALUES
       ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING user_id, is_instructor
@@ -86,13 +86,13 @@ const userSignup = async (user, profile_picture) => {
         is_instructor,
         profile_picture_key,
         github,
-        hitlab,
+        gitlab,
         linkedin,
         youtube,
         bio,
       ]
     );
-    if (instructor_links.length) {
+    if (instructor_links?.length) {
       await Promise.all(
         instructor_links.map(async (link) => {
           await db.none(
