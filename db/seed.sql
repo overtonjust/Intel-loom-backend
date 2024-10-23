@@ -204,3 +204,31 @@ VALUES
 (4, 4),
 (4, 5),
 (4, 4);
+
+INSERT INTO forums_posts (user_id, post)
+VALUES 
+(1, 'What are the best programming languages to learn in 2024?'),
+(2, 'How do you stay motivated to code every day?'),
+(3, 'What are some tips for improving problem-solving skills in programming?'),
+(4, 'What projects should I work on to build a strong portfolio?'),
+(5, 'How do you keep up with the latest technology trends?');
+
+INSERT INTO forums_responses (post_id, parent_response_id, user_id, response)
+VALUES 
+(1, NULL, 2, 'I think Python and JavaScript are essential in 2024.'),
+(1, NULL, 3, 'Dont forget about Rust! Its gaining popularity.'),
+(1, 1, 4, 'Yeah, Python is great for data science.'),
+(1, 1, 5, 'JavaScript is versatile for both frontend and backend development.'),
+(1, 2, 1, 'I agree, Rust is powerful for system-level programming.'),
+(1, 3, 2, 'True, it also has great memory safety features.'),
+(2, NULL, 4, 'I stay motivated by setting small, achievable goals every day.'),
+(2, NULL, 1, 'Joining a community helps. I like to work on open-source projects.'),
+(2, 6, 3, 'Thats a good idea. I should join a community too.'),
+(3, NULL, 5, 'Practice solving problems on LeetCode or Codeforces.'),
+(3, 8, 2, 'LeetCode is great for learning algorithms.'),
+(3, 8, 3, 'Make sure to also understand the theory behind algorithms.'),
+(4, NULL, 2, 'Building full-stack web applications can show your versatility.'),
+(4, 11, 1, 'Mobile apps are also a good option. Employers love them.'),
+(5, NULL, 3, 'Subscribe to newsletters and follow tech influencers on Twitter.'),
+(5, 13, 4, 'Podcasts are also a great way to keep up with the latest trends.'),
+(5, 14, 5, 'I recommend "Software Engineering Daily" for podcasts.');

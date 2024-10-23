@@ -56,7 +56,7 @@ CREATE TABLE class_dates (
   class_date_id SERIAL PRIMARY KEY,
   class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
   class_start TIMESTAMPTZ NOT NULL,
-  class_end TIMESTAMPTZ NOT NULL,
+  class_end TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE class_pictures (
@@ -85,4 +85,18 @@ CREATE TABLE instructor_class_recordings (
 CREATE TABLE booked_classes (
   class_date_id INTEGER REFERENCES class_dates(class_date_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE forums_posts (
+  post_id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  post TEXT NOT NULL
+);
+
+CREATE TABLE forums_responses (
+  response_id SERIAL PRIMARY KEY,
+  post_id INTEGER REFERENCES forums_posts(post_id) ON DELETE CASCADE,
+  parent_response_id INTEGER REFERENCES forums_responses(response_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  response TEXT NOT NULL
 );

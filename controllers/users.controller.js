@@ -68,7 +68,7 @@ users.post("/register", upload.single("profilePicture"), async (req, res) => {
   }
 });
 
-users.post("/logout", (req, res) => {
+users.post("/logout", authenticateUser, (req, res) => {
   try {
     req.session.destroy((err) => {
       if (err) {
@@ -82,7 +82,7 @@ users.post("/logout", (req, res) => {
   }
 });
 
-users.get("/check-session", (req, res) => {
+users.get("/check-session", authenticateUser, (req, res) => {
   if (req.session.loggedIn) {
     res.status(200).json("Session is active.");
   } else {
