@@ -19,10 +19,10 @@ CREATE TABLE users (
   security_answer VARCHAR(256) NOT NULL,
   is_instructor BOOLEAN DEFAULT FALSE,
   profile_picture TEXT,
-  github VARCHAR(50),
-  linkedin VARCHAR(50),
-  gitlab VARCHAR(50),
-  youtube VARCHAR(50),
+  github TEXT,
+  linkedin TEXT,
+  gitlab TEXT,
+  youtube TEXT,
   bio TEXT
 );
 
