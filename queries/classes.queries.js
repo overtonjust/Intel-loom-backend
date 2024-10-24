@@ -202,7 +202,9 @@ const getClassDateInfo = async (class_date_id) => {
     if (class_students.length) {
       class_students = await Promise.all(
         class_students.map(async (user) => {
-          user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
+          if (user.profile_picture) {
+            user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
+          }
           return user;
         })
       );

@@ -19,8 +19,11 @@ const getForums = async (page = 1) => {
     if (more_posts) forums.pop();
     posts = await Promise.all(
       posts.map(async (post) => {
-        const signedUrl = await getSignedUrlFromS3(post.profile_picture);
-        return { ...post, profile_picture: signedUrl };
+        if (post.profile_picture) {
+          const signedUrl = await getSignedUrlFromS3(post.profile_picture);
+          post.profile_picture = signedUrl;
+        }
+        return post;
       })
     );
     return { posts, more_posts };
@@ -40,8 +43,10 @@ const getForumById = async (postId) => {
       `,
       postId
     );
-    const signedUrl = await getSignedUrlFromS3(post.profile_picture);
-    post.profile_picture = signedUrl;
+    if (post.profile_picture) {
+      const signedUrl = await getSignedUrlFromS3(post.profile_picture);
+      post.profile_picture = signedUrl;
+    }
     return post;
   } catch (error) {
     throw error;
@@ -67,8 +72,11 @@ const getDirectResponses = async (postId, page = 1) => {
     if (more_responses) responses.pop();
     responses = await Promise.all(
       responses.map(async (response) => {
-        const signedUrl = await getSignedUrlFromS3(response.profile_picture);
-        return { ...response, profile_picture: signedUrl };
+        if (response.profile_picture) {
+          const signedUrl = await getSignedUrlFromS3(response.profile_picture);
+          response.profile_picture = signedUrl;
+        }
+        return response;
       })
     );
     responses = responses.sort((a, b) => a.response_id - b.response_id);
@@ -89,8 +97,10 @@ const getResponseById = async (responseId) => {
       `,
       responseId
     );
-    const signedUrl = await getSignedUrlFromS3(response.profile_picture);
-    response.profile_picture = signedUrl;
+    if (response.profile_picture) {
+      const signedUrl = await getSignedUrlFromS3(response.profile_picture);
+      response.profile_picture = signedUrl;
+    }
     return response;
   } catch (error) {
     throw error;
@@ -116,8 +126,11 @@ const getResponses = async (responseId, page = 1) => {
     if (more_responses) responses.pop();
     responses = await Promise.all(
       responses.map(async (response) => {
-        const signedUrl = await getSignedUrlFromS3(response.profile_picture);
-        return { ...response, profile_picture: signedUrl };
+        if (response.profile_picture) {
+          const signedUrl = await getSignedUrlFromS3(response.profile_picture);
+          response.profile_picture = signedUrl;
+        }
+        return response;
       })
     );
     responses = responses.sort((a, b) => a.response_id - b.response_id);
@@ -163,8 +176,10 @@ const createResponse = async (response_body, user_id) => {
       `,
       user_id
     );
-    const signedUrl = await getSignedUrlFromS3(user.profile_picture);
-    user.profile_picture = signedUrl;
+    if (user.profile_picture) {
+      const signedUrl = await getSignedUrlFromS3(user.profile_picture);
+      user.profile_picture = signedUrl;
+    }
     return { ...newResponse, ...user };
   } catch (error) {
     throw error;
