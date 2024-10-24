@@ -330,9 +330,9 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
       `,
       class_id
     );
-    const { first_name, last_name } = await db.oneOrNone(
+    const user = await db.oneOrNone(
       `
-      SELECT first_name, last_name
+      SELECT first_name, last_name, profile_picture
       FROM users
       WHERE user_id = $1
       `,
@@ -352,7 +352,8 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
         },
       }
     );
-    return { first_name, last_name, roomCode: code };
+    if (user.profile_picture) user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
+    return { ...user, roomCode: code };
   } catch (error) {
     throw error;
   }
