@@ -12,7 +12,7 @@ const {
   createResponse,
 } = require("../queries/forums.queries.js");
 
-/* forums.use(authenticateUser); */
+forums.use(authenticateUser);
 
 forums.get("/", async (req, res) => {
   try {
