@@ -12,11 +12,12 @@ const {
   createResponse,
 } = require("../queries/forums.queries.js");
 
-/* forums.use(authenticateUser); */
+forums.use(authenticateUser);
 
 forums.get("/", async (req, res) => {
   try {
-    const posts = await getForums();
+    const { page } = req.query;
+    const posts = await getForums(page);
     res.json(camelizeKeys(posts));
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -35,8 +36,9 @@ forums.get("/forum-info/:postId", async (req, res) => {
 
 forums.get("/post-responses/:postId", async (req, res) => {
   try {
+    const { page } = req.query;
     const { postId } = req.params;
-    const responses = await getDirectResponses(postId);
+    const responses = await getDirectResponses(postId, page);
     res.json(camelizeKeys(responses));
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -55,8 +57,9 @@ forums.get("/response-info/:responseId", async (req, res) => {
 
 forums.get("/response-responses/:responseId", async (req, res) => {
   try {
+    const { page } = req.query;
     const { responseId } = req.params;
-    const responses = await getResponses(responseId);
+    const responses = await getResponses(responseId, page);
     res.json(camelizeKeys(responses));
   } catch (error) {
     res.status(500).json({ error: error.message });
