@@ -6,7 +6,7 @@
   "scripts": {
     "db:init": "psql -U postgres -f db/schema.sql",
     "db:seed": "psql -U postgres -f db/seed.sql",
-    "deploy-setup": "$ dotenv-cli -- psql $DEPLOYED_DB -f db/schemaDeploy.sql -f seedDeploy.sql",
+    "deploy-setup": "$ dotenv-cli -- psql DEPLOYED_DB -f db/schemaDeploy.sql -f seedDeploy.sql",
     "test": "jest"
   },
   "keywords": [],
@@ -20,7 +20,6 @@
     "connect-pg-simple": "^10.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "dotenv-cli": "^7.4.2",
     "express": "^4.21.0",
     "express-session": "^1.18.0",
     "ffmpeg": "^0.0.4",
@@ -32,6 +31,7 @@
     "sharp": "^0.33.5"
   },
   "devDependencies": {
+    "dotenv-cli": "^7.4.2",
     "jest": "^29.7.0",
     "supertest": "^7.0.0"
   }
