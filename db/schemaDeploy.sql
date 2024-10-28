@@ -1,0 +1,110 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS instructor_links;
+DROP TABLE IF EXISTS instructor_reviews;
+DROP TABLE IF EXISTS instructor_ratings;
+DROP TABLE IF EXISTS classes;
+DROP TABLE IF EXISTS class_dates;
+DROP TABLE IF EXISTS class_pictures;
+DROP TABLE IF EXISTS class_recordings;
+DROP TABLE IF EXISTS user_class_recordings;
+DROP TABLE IF EXISTS instructor_class_recordings;
+DROP TABLE IF EXISTS booked_classes;
+DROP TABLE IF EXISTS forums_posts;
+DROP TABLE IF EXISTS forums_responses;
+
+SET TIMEZONE = 'America/New_York';
+
+CREATE TABLE users (
+  user_id SERIAL PRIMARY KEY,
+  first_name VARCHAR(50) NOT NULL,
+  middle_name VARCHAR(50),
+  last_name VARCHAR(50) NOT NULL,
+  username VARCHAR(15) NOT NULL UNIQUE,
+  birth_date DATE NOT NULL,
+  email VARCHAR(50) NOT NULL UNIQUE,
+  password VARCHAR(256) NOT NULL,
+  security_question VARCHAR(35) NOT NULL,
+  security_answer VARCHAR(256) NOT NULL,
+  is_instructor BOOLEAN DEFAULT FALSE,
+  profile_picture TEXT,
+  github TEXT,
+  linkedin TEXT,
+  gitlab TEXT,
+  youtube TEXT,
+  bio TEXT
+);
+
+CREATE TABLE instructor_links (
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  link TEXT NOT NULL
+);
+
+CREATE TABLE instructor_reviews (
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  review TEXT NOT NULL
+);
+
+CREATE TABLE instructor_ratings (
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5)
+);
+
+CREATE TABLE classes (
+  class_id SERIAL PRIMARY KEY,
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  title VARCHAR(50) NOT NULL,
+  description TEXT NOT NULL,
+  price DECIMAL(5, 2) NOT NULL,
+  capacity INTEGER NOT NULL CHECK (capacity <= 20),
+  room_id TEXT
+);
+
+CREATE TABLE class_dates (
+  class_date_id SERIAL PRIMARY KEY,
+  class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
+  class_start TIMESTAMPTZ NOT NULL,
+  class_end TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE class_pictures (
+  picture_id SERIAL PRIMARY KEY,
+  class_id INTEGER REFERENCES classes(class_id) ON DELETE CASCADE,
+  picture_key TEXT NOT NULL,
+  is_highlight BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE class_recordings (
+  class_recording_id SERIAL PRIMARY KEY,
+  class_date_id INTEGER REFERENCES class_dates(class_date_id) ON DELETE CASCADE,
+  recording_key TEXT NOT NULL
+);
+
+CREATE TABLE user_class_recordings (
+  class_recording_id INTEGER REFERENCES class_recordings(class_recording_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE instructor_class_recordings (
+  class_recording_id INTEGER REFERENCES class_recordings(class_recording_id) ON DELETE CASCADE,
+  instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE booked_classes (
+  class_date_id INTEGER REFERENCES class_dates(class_date_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE forums_posts (
+  post_id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  post TEXT NOT NULL
+);
+
+CREATE TABLE forums_responses (
+  response_id SERIAL PRIMARY KEY,
+  post_id INTEGER REFERENCES forums_posts(post_id) ON DELETE CASCADE,
+  parent_response_id INTEGER REFERENCES forums_responses(response_id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  response TEXT NOT NULL
+);
