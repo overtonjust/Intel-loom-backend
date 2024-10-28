@@ -6,7 +6,8 @@
   "scripts": {
     "db:init": "psql -U postgres -f db/schema.sql",
     "db:seed": "psql -U postgres -f db/seed.sql",
-    "deploy-setup": "$ dotenv-cli -- psql DEPLOYED_DB -f db/schemaDeploy.sql -f seedDeploy.sql",
+    "_run-deploy": "psql $DEPLOYED_DB -f db/schemaDeploy.sql -f seedDeploy.sql",
+    "deploy-setup": "dotenv -- npm run _run-deploy",
     "test": "jest"
   },
   "keywords": [],
