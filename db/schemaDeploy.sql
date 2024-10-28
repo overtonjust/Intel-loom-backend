@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS class_recordings;
 DROP TABLE IF EXISTS user_class_recordings;
 DROP TABLE IF EXISTS instructor_class_recordings;
 DROP TABLE IF EXISTS booked_classes;
-DROP TABLE IF EXISTS forums_posts;
+DROP TABLE IF EXISTS forums_posts CASCADE;
 DROP TABLE IF EXISTS forums_responses;
 
 SET TIMEZONE = 'America/New_York';
