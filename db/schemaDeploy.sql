@@ -1,8 +1,8 @@
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS instructor_links;
 DROP TABLE IF EXISTS instructor_reviews;
 DROP TABLE IF EXISTS instructor_ratings;
-DROP TABLE IF EXISTS classes;
+DROP TABLE IF EXISTS classes CASCADE;
 DROP TABLE IF EXISTS class_dates;
 DROP TABLE IF EXISTS class_pictures;
 DROP TABLE IF EXISTS class_recordings;
