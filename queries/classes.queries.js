@@ -339,7 +339,6 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
       user_id
     );
     const user_role = instructor_id === Number(user_id) ? "host" : "guest";
-    console.log(msURL, room_id, user_role)
     const {
       data: { code },
     } = await axios.post(
