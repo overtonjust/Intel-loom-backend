@@ -330,6 +330,7 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
       `,
       class_id
     );
+    console.log(room_id)
     const user = await db.oneOrNone(
       `
       SELECT first_name, last_name, profile_picture
@@ -352,6 +353,7 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
         },
       }
     );
+    console.log(data)
     if (user.profile_picture) user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
     return { ...user, roomCode: code };
   } catch (error) {
