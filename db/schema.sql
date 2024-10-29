@@ -34,7 +34,7 @@ CREATE TABLE instructor_links (
 CREATE TABLE instructor_reviews (
   instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-  review TEXT NOT NULL
+  review VARCHAR(180) NOT NULL
 );
 
 CREATE TABLE instructor_ratings (

@@ -111,7 +111,7 @@ const userSignup = async (user, profile_picture) => {
 const userInfo = async (id) => {
   try {
     const user = await db.oneOrNone(
-      "SELECT first_name, middle_name, last_name, bio, email, is_instructor, profile_picture, github, gitlab, linkedin, youtube FROM users WHERE user_id = $1",
+      "SELECT user_id, first_name, middle_name, last_name, bio, email, is_instructor, profile_picture, github, gitlab, linkedin, youtube FROM users WHERE user_id = $1",
       id
     );
     if (!user) throw new Error("User not found");
@@ -178,12 +178,14 @@ const getUserClasses = async (id) => {
         }
       })
     );
-    const formatted_class_info = classes_info_bulk.map(({class_date_id, class_start, class_end, class_id}) => ({
-      class_date_id,
-      class_start,
-      class_end,
-      class_info: class_map.get(class_id),
-    }));
+    const formatted_class_info = classes_info_bulk.map(
+      ({ class_date_id, class_start, class_end, class_id }) => ({
+        class_date_id,
+        class_start,
+        class_end,
+        class_info: class_map.get(class_id),
+      })
+    );
     const classes_by_date = formatted_class_info.reduce((objAcc, classInfo) => {
       const class_date = format_date(classInfo.class_start);
       objAcc[class_date] = (objAcc[class_date] || []).concat(classInfo);
@@ -220,9 +222,13 @@ const userClassRecordings = async (id) => {
     );
     if (!recordings.length) return [];
     const formatted_recordings = await Promise.all(
-      recordings.map(async ({recording_key, class_start, title }) => {
+      recordings.map(async ({ recording_key, class_start, title }) => {
         const signed_url = await getSignedUrlFromS3(recording_key);
-        return { class_date: format_recording_date(class_start), title, recording_key: signed_url };
+        return {
+          class_date: format_recording_date(class_start),
+          title,
+          recording_key: signed_url,
+        };
       })
     );
     return formatted_recordings;
@@ -249,14 +255,18 @@ const bookClass = async (user_id, class_date_id) => {
 
 const addInstructorReview = async (user_id, instructor_id, review, rating) => {
   try {
-    await db.none(
-      "INSERT INTO instructor_reviews (user_id, instructor_id, review) VALUES ($1, $2, $3)",
-      [user_id, instructor_id, review]
-    );
-    await db.none(
-      "INSERT INTO instructor_ratings (instructor_id, rating) VALUES ($1, $2)",
-      [instructor_id, rating]
-    );
+    if (review.length !== 0) {
+      await db.none(
+        "INSERT INTO instructor_reviews (user_id, instructor_id, review) VALUES ($1, $2, $3)",
+        [user_id, instructor_id, review]
+      );
+    }
+    if (rating !== 0) {
+      await db.none(
+        "INSERT INTO instructor_ratings (instructor_id, rating) VALUES ($1, $2)",
+        [instructor_id, rating]
+      );
+    }
   } catch (error) {
     throw error;
   }
