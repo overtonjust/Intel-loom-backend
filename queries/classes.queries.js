@@ -330,7 +330,6 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
       `,
       class_id
     );
-    console.log(room_id)
     const user = await db.oneOrNone(
       `
       SELECT first_name, last_name, profile_picture
@@ -340,6 +339,7 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
       user_id
     );
     const user_role = instructor_id === Number(user_id) ? "host" : "guest";
+    console.log(msURL, room_id, user_role)
     const {
       data: { code },
     } = await axios.post(
@@ -353,7 +353,6 @@ const getRoomCodeWithUser = async (class_id, user_id) => {
         },
       }
     );
-    console.log(data)
     if (user.profile_picture) user.profile_picture = await getSignedUrlFromS3(user.profile_picture);
     return { ...user, roomCode: code };
   } catch (error) {
