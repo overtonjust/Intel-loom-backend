@@ -24,7 +24,7 @@ classes.get("/", async (req, res) => {
   }
 });
 
-classes.get("/class-info/:classId", authenticateUser, async (req, res) => {
+classes.get("/class-info/:classId", async (req, res) => {
   try {
     const { userId } = req.session;
     const { classId } = req.params;
