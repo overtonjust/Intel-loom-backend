@@ -87,7 +87,7 @@ classes.post(
     try {
       const { classDateId } = req.params;
       const { userId } = req.session;
-      const recording = req.file.recording ? req.file.recording[0] : null;
+      const recording = req.file.fieldname === 'recording' ? req.file : null;
       await addClassRecording(classDateId, recording, userId);
     } catch (error) {
       res.status(404).json({ error: error.message });
