@@ -1,8 +1,16 @@
-DROP DATABASE IF EXISTS intel_loom;
-
-CREATE DATABASE intel_loom;
-
-\c intel_loom;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS instructor_links;
+DROP TABLE IF EXISTS instructor_reviews;
+DROP TABLE IF EXISTS instructor_ratings;
+DROP TABLE IF EXISTS classes CASCADE;
+DROP TABLE IF EXISTS class_dates CASCADE;
+DROP TABLE IF EXISTS class_pictures;
+DROP TABLE IF EXISTS class_recordings CASCADE;
+DROP TABLE IF EXISTS user_class_recordings;
+DROP TABLE IF EXISTS instructor_class_recordings;
+DROP TABLE IF EXISTS booked_classes;
+DROP TABLE IF EXISTS forums_posts CASCADE;
+DROP TABLE IF EXISTS forums_responses;
 
 SET TIMEZONE = 'America/New_York';
 
@@ -34,7 +42,7 @@ CREATE TABLE instructor_links (
 CREATE TABLE instructor_reviews (
   instructor_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-  review VARCHAR(180) NOT NULL
+  review TEXT NOT NULL
 );
 
 CREATE TABLE instructor_ratings (

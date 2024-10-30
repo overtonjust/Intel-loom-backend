@@ -6,6 +6,8 @@
   "scripts": {
     "db:init": "psql -U postgres -f db/schema.sql",
     "db:seed": "psql -U postgres -f db/seed.sql",
+    "_run-deploy": "psql $DEPLOYED_DB -f db/schemaDeploy.sql -f db/seedDeploy.sql",
+    "deploy-setup": "dotenv -- npm run _run-deploy",
     "test": "jest"
   },
   "keywords": [],
@@ -19,6 +21,7 @@
     "connect-pg-simple": "^10.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "dotenv-cli": "^7.4.2",
     "express": "^4.21.0",
     "express-session": "^1.18.0",
     "ffmpeg": "^0.0.4",
