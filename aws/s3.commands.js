@@ -29,11 +29,6 @@ const modifyVideo = (inputPath, outputPath) => {
       .videoCodec("libx264")
       .audioCodec("aac")
       .format("mp4")
-      .size("500x500")
-      .aspect("1:1")
-      .outputOptions([
-        "-vf scale='min(500,iw)':'min(500,ih)':force_original_aspect_ratio=decrease",
-      ])
       .output(outputPath)
       .on("end", () => resolve(outputPath))
       .on("error", reject)
