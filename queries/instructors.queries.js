@@ -12,7 +12,8 @@ const getInstructorClasses = async (id) => {
       JOIN class_dates ON classes.class_id = class_dates.class_id
       JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE classes.instructor_id = $1
-      AND class_dates.class_start >= (NOW() - INTERVAL '1 HOUR') AT TIME ZONE 'America/New_York'
+      AND class_dates.class_start >= (NOW() - INTERVAL '1 HOUR')
+      ORDER BY class_dates.class_start
       `,
       id
     );

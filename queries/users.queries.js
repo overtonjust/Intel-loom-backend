@@ -159,6 +159,7 @@ const getUserClasses = async (id) => {
       JOIN class_pictures ON classes.class_id = class_pictures.class_id AND class_pictures.is_highlight = true
       WHERE booked_classes.user_id = $1
       AND class_dates.class_start >= (NOW() - INTERVAL '1 HOUR')
+      ORDER BY class_dates.class_start
       `,
       id
     );
