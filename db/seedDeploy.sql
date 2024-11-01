@@ -529,7 +529,7 @@ VALUES
 (6, 'JSUnderstandingStringMethods.png', TRUE),
 (7, 'JSAsyncvsSync.png', TRUE),
 (8, 'PythonUnderstandingRegularExpressions.png', TRUE),
-(9, 'IntroToJs.png', TRUE);
+(9, 'IntroToJS.png', TRUE);
 
 
 INSERT INTO instructor_links (instructor_id, link)
