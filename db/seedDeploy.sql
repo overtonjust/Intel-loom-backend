@@ -39,7 +39,7 @@ INSERT INTO classes
   description, 
   price, capacity, room_id) 
 VALUES 
-(2, 'Object Oriented Programming',
+(2, 'Python: OOP',
 'Dive deep into Object-Oriented Programming concepts in Python. Learn to create classes, implement inheritance and polymorphism, use decorators, and understand method resolution order. Build complex applications using composition, abstract classes, and modern OOP design patterns.',
   70.00, 15, '67250fe7e1c77fcc4c2770b5'),
 (2, 'Python Fundamentals',
@@ -48,19 +48,19 @@ VALUES
 (2, 'Arrays in Python',
 'Explore advanced techniques for working with arrays and sequences in Python. Learn list comprehensions, slicing operations, and array transformations using NumPy. Master sorting algorithms, searching methods, and optimization strategies for handling large datasets efficiently.'
 ,  50.00, 15, '67251049e1c77fcc4c2770b7'),
-(3, 'Javascript: API Integration',
+(3, 'API Integration',
 'Learn the fundamentals of working with APIs in web applications. Explore RESTful principles, fetch API, authentication methods, and best practices for handling API responses and errors.',
   70.00, 15, '6720d14c849b17dcfc918c61'),
 (3, 'Javascript: OOP',
 'Learn how to write object-oriented code in JavaScript using both ES6 class syntax and traditional prototype-based patterns. Explore object creation, constructor functions, the ''this'' keyword, and prototypal inheritance. Practice creating and extending classes while understanding encapsulation and method implementation in JavaScript''s unique OOP approach.',
   80.00, 15, '6720d0d4e1c77fcc4c277056'),
-(4, 'String Methods in Javascript',
+(4, 'String Methods JS',
 'Master JavaScript string manipulation through practical exercises. Learn essential methods like .split(), .join(), .substring(), and .replace(). Understand string immutability and how to efficiently work with text data in your applications.', 
   40.00, 15, '6720d0ade1c77fcc4c277054'),
-(4, 'Async vs Sync in Javascript',
+(4, 'Async vs Sync JS',
 'Understanding asynchronous programming is crucial in modern web development. Learn about callbacks, promises, async/await, and how to handle API requests effectively while keeping your applications responsive.',
   60.00, 15, '6720d123849b17dcfc918c60'),
-(4, 'Understanding Regular Expressions in Python', 'Master pattern matching and text manipulation using Python''s regular expression library. Learn to create search patterns, use capture groups, perform string substitutions, and validate text formats. Apply regex solutions to real-world data processing and validation challenges.', 65.00, 15, '67251095849b17dcfc918cb9'),
+(4, 'Python Regexp', 'Master pattern matching and text manipulation using Python''s regular expression library. Learn to create search patterns, use capture groups, perform string substitutions, and validate text formats. Apply regex solutions to real-world data processing and validation challenges.', 65.00, 15, '67251095849b17dcfc918cb9'),
 (6, 'Javascript Fundamentals',
 'Begin your JavaScript journey by understanding the core building blocks of programming. Learn about variables, data types (numbers, strings, booleans), basic operators, conditional statements (if/else), and loops (for, while). Build a solid foundation with proper syntax, commenting, and basic debugging techniques.', 35.00, 15, '672510b1e1c77fcc4c2770b8');
 
