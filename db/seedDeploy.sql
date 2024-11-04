@@ -380,4 +380,5 @@ VALUES
 (4, 11, 1, 'Mobile apps are also a good option. Employers love them.'),
 (5, NULL, 3, 'Subscribe to newsletters and follow tech influencers on Twitter.'),
 (5, 13, 4, 'Podcasts are also a great way to keep up with the latest trends.'),
-(5, 14, 5, 'I recommend "Software Engineering Daily" for podcasts.');
+(5, 14, 5, 'I recommend "Software Engineering Daily" for podcasts.'),
+(6, NULL, 5, 'I would recommend Chris'' Python fundamentals class as a great place to start! You can find it here https://intel-loom.netlify.app/classInfo/2');
