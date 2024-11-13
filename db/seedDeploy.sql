@@ -33,7 +33,11 @@ VALUES
 ('John', null, 'Ferguson', 'jfergs@gmail.com', 
   '$2b$10$QSXrgPt9JFYGzll2fOBfN.6szviDAY9FuTmKJ/CoRZ5dYivqAH0QS', true, 
   'john.jpg',
-  'John Ferguson is a software developer eager to spread his knowledge of Javascript to all lovers of tech. With 12 years of experience, John is sure to give you the strategies and guidance to help you hone your craft as a developer.', 'jfergs', '1980-04-12', 'What is your favorite color?', '$2b$10$EJapETL5vuTtoSJSxI.h1ehwz6ngVAHb9b2xpDnoFXrfKzpkaAlQa', 'github.com/jfergs', 'linkedin.com/jfergs', 'gitlab.com/jfergs');
+  'John Ferguson is a software developer eager to spread his knowledge of Javascript to all lovers of tech. With 12 years of experience, John is sure to give you the strategies and guidance to help you hone your craft as a developer.', 'jfergs', '1980-04-12', 'What is your favorite color?', '$2b$10$EJapETL5vuTtoSJSxI.h1ehwz6ngVAHb9b2xpDnoFXrfKzpkaAlQa', 'github.com/jfergs', 'linkedin.com/jfergs', 'gitlab.com/jfergs'),
+('Carlos', null, 'Godoy', 'cgodoy@pursuit.org', 
+'$2b$10$QSXrgPt9JFYGzll2fOBfN.6szviDAY9FuTmKJ/CoRZ5dYivqAH0QS', false,
+'',
+'Carlos Godoy is a full-stack software engineer with over eight years of experience building scalable web applications. She specializes in JavaScript, React, Node.js, and cloud infrastructure, with a passion for developing user-centered solutions. Carlos has led development teams at multiple startups, taking products from concept to launch and handling complex technical challenges. When not coding, he’s an advocate for women in tech, regularly mentoring new developers.', 'cgodoy', '1990-05-15', 'What is your favorite color?', '$2b$10$EJapETL5vuTtoSJSxI.h1ehwz6ngVAHb9b2xpDnoFXrfKzpkaAlQa', '', '', '');
 
 
 INSERT INTO classes 
@@ -275,7 +279,21 @@ VALUES
 (5, 37), (5, 38), (5, 39),
 (5, 40), (5, 45), (5, 42),
 (5, 43), (5, 44), (5, 45),
-(5, 46), (5, 47), (5, 48), (5, 49);
+(5, 46), (5, 47), (5, 48), (5, 49),
+(7, 4), (7, 73), (7, 22),
+(7, 5), (7, 74), (7, 23),
+(7, 6), (7, 75), (7, 24),
+(7, 7), (7, 76), (7, 25),
+(7, 8), (7, 77), (7, 26),
+(7, 9), (7, 78), (7, 27),
+(7, 28), (7, 29), (7, 30),
+(7, 37), (7, 32), (7, 33),
+(7, 34), (7, 35), (7, 36),
+(7, 37), (7, 38), (7, 39),
+(7, 40), (7, 47), (7, 42),
+(7, 43), (7, 44), (7, 45),
+(7, 46), (7, 47), (7, 48),
+(7, 49);
 
 
 INSERT INTO class_pictures (class_id, picture_key, is_highlight) 
@@ -320,7 +338,7 @@ VALUES
 (4, 2, 'The class was structured well and easy to follow.'),
 (4, 3, 'Amazing teaching style, would take another class with them.'),
 (4, 5, 'Incredible class, very informative and interactive.'),
-(6, 1, 'John is a great instructor! He even stayed after the lesson to answer my lingering questions!'),
+(6, 7, 'John is a great instructor! He even stayed after the lesson to answer my lingering questions!'),
 (6, 4, 'John is a natural code coach!'),
 (6, 5, 'Excellent instructor, I really learned a lot!'),
 (6, 2, 'Well-prepared and professional.');
