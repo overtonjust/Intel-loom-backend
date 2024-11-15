@@ -338,7 +338,7 @@ VALUES
 (4, 2, 'The class was structured well and easy to follow.'),
 (4, 3, 'Amazing teaching style, would take another class with them.'),
 (4, 5, 'Incredible class, very informative and interactive.'),
-(6, 7, 'John is a great instructor! He even stayed after the lesson to answer my lingering questions!'),
+(6, 7, 'John is a great instructor! He even stayed after the lesson to answer extra questions!'),
 (6, 4, 'John is a natural code coach!'),
 (6, 5, 'Excellent instructor, I really learned a lot!'),
 (6, 2, 'Well-prepared and professional.');
